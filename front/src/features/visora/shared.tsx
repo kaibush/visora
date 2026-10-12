@@ -21,27 +21,38 @@ export function VisoraPage({
   return (
     <>
       <Header fixed className='border-b bg-background/95 backdrop-blur'>
-        <span className='min-w-0 truncate text-sm text-muted-foreground'>
+        <span className='min-w-0 flex-1 truncate text-sm text-muted-foreground'>
           <span className='hidden sm:inline'>
             工作空间 <span className='mx-2 text-border'>/</span>
           </span>
           <span className='font-medium text-foreground'>{title}</span>
         </span>
-        <div className='ms-auto flex items-center gap-3'>
-          <span className='hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground sm:flex'>
+        <div className='ms-auto flex shrink-0 items-center gap-2 sm:gap-3'>
+          <span className='hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground md:flex'>
             <span className='size-1.5 rounded-full bg-emerald-500' />
             Visora
           </span>
           <ThemeSwitch />
         </div>
       </Header>
-      <Main className='space-y-6 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:p-8' fluid>
-        <div className='flex flex-wrap items-start justify-between gap-4'>
-          <div>
-            <h1 className='text-2xl font-semibold tracking-tight'>{title}</h1>
-            <p className='mt-2 text-sm text-muted-foreground'>{description}</p>
+      <Main
+        className='min-w-0 space-y-5 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:space-y-6 sm:p-4 md:p-8'
+        fluid
+      >
+        <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between'>
+          <div className='min-w-0'>
+            <h1 className='text-xl font-semibold tracking-tight sm:text-2xl'>
+              {title}
+            </h1>
+            <p className='mt-1.5 text-sm leading-6 text-muted-foreground'>
+              {description}
+            </p>
           </div>
-          {action}
+          {action && (
+            <div className='w-full shrink-0 sm:w-auto [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto'>
+              {action}
+            </div>
+          )}
         </div>
         {children}
         <footer className='flex flex-wrap justify-between gap-2 border-t pt-5 text-xs text-muted-foreground'>

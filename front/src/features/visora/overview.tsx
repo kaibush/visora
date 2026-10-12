@@ -7,7 +7,6 @@ import {
   Eye,
   Layers,
   MousePointer2,
-  Plus,
   Users,
 } from 'lucide-react'
 import {
@@ -40,7 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { api, formatNumber, formatTime, type Ranking, type Report } from './api'
 import { AnalyticsFilters, useAnalyticsFilter } from './filter'
-import { EmptyState, ErrorState, VisoraPage } from './shared'
+import { EmptyState, ErrorState } from './shared'
 
 function Change({ value, previous }: { value: number; previous: number }) {
   if (!previous)
@@ -109,7 +108,7 @@ function RankingList({
   )
 }
 
-export function VisoraOverview() {
+export function OverviewPanel() {
   const { query } = useAnalyticsFilter()
   const { data, error, isPending, isFetching, refetch } = useQuery({
     queryKey: ['visora', 'analytics', query],
@@ -149,22 +148,11 @@ export function VisoraOverview() {
       ]
     : []
   return (
-    <VisoraPage
-      title='访问概览'
-      description='每一个项目的访问表现，一目了然。'
-      action={
-        <Button asChild>
-          <Link to='/projects'>
-            <Plus className='size-4' />
-            接入项目
-          </Link>
-        </Button>
-      }
-    >
+    <>
       <AnalyticsFilters refresh={() => void refetch()} fetching={isFetching} />
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {isPending && (
-        <div className='grid gap-4 md:grid-cols-4'>
+        <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
           {[1, 2, 3, 4].map((n) => (
             <Skeleton key={n} className='h-36 rounded-xl' />
           ))}
@@ -172,20 +160,20 @@ export function VisoraOverview() {
       )}
       {data && (
         <>
-          <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+          <div className='grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4'>
             {metrics.map((metric) => (
               <Card key={metric.unit} className='gap-4 shadow-none'>
                 <CardHeader className='flex flex-row items-center justify-between pb-0'>
-                  <CardTitle className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+                  <CardTitle className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-muted-foreground sm:text-sm'>
                     {metric.label}
-                    <span className='text-[10px] font-normal tracking-wide opacity-70'>
+                    <span className='text-[11px] font-normal tracking-wide opacity-70'>
                       {metric.unit}
                     </span>
                   </CardTitle>
                   <metric.icon className='size-4 text-primary/65' />
                 </CardHeader>
                 <CardContent>
-                  <div className='mb-3 text-3xl font-semibold tracking-tight tabular-nums'>
+                  <div className='mb-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl'>
                     {formatNumber(metric.value)}
                     {metric.unit === 'Live' && (
                       <span className='ml-3 inline-block size-2 rounded-full bg-emerald-500 align-middle' />
@@ -209,7 +197,11 @@ export function VisoraOverview() {
                 <CardTitle className='text-base'>访问趋势</CardTitle>
                 <CardDescription>
                   观察流量变化，了解项目的每一天。
-                  <Link to='/trends' className='ml-2 text-primary'>
+                  <Link
+                    to='/'
+                    search={{ view: 'trends' }}
+                    className='ml-2 text-primary'
+                  >
                     打开柱状图并下钻
                   </Link>
                 </CardDescription>
@@ -227,13 +219,13 @@ export function VisoraOverview() {
             </CardHeader>
             <CardContent className='px-2 pb-2 sm:px-6'>
               <div
-                className='h-72 w-full'
+                className='h-56 w-full min-w-0 sm:h-72'
                 aria-label='每日浏览量和独立访客趋势图'
               >
                 <ResponsiveContainer width='100%' height='100%'>
                   <AreaChart
                     data={data.trend}
-                    margin={{ top: 10, right: 16, left: -20, bottom: 0 }}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 4 }}
                   >
                     <defs>
                       <linearGradient
@@ -482,6 +474,6 @@ export function VisoraOverview() {
           </div>
         </>
       )}
-    </VisoraPage>
+    </>
   )
 }

@@ -59,7 +59,7 @@ export function AppSidebar() {
                   <span className='text-xl font-semibold tracking-tight'>
                     Visora
                   </span>
-                  <span className='text-[10px] tracking-wider text-muted-foreground'>
+                  <span className='text-xs tracking-wider text-muted-foreground'>
                     统一访问统计平台
                   </span>
                 </span>
@@ -76,7 +76,7 @@ export function AppSidebar() {
       <SidebarFooter className='gap-4 p-4'>
         <div className='rounded-lg border bg-muted/30 p-3 group-data-[collapsible=icon]:hidden'>
           <p className='text-xs font-medium'>让数据连接你的产品</p>
-          <p className='mt-2 text-[11px] leading-5 text-muted-foreground'>
+          <p className='mt-2 text-xs leading-5 text-muted-foreground'>
             用一段脚本，开启统一的访问洞察。
           </p>
           <Link
@@ -93,7 +93,7 @@ export function AppSidebar() {
           </div>
           <div className='min-w-0 flex-1 group-data-[collapsible=icon]:hidden'>
             <p className='text-xs font-medium'>工作空间管理员</p>
-            <p className='mt-1 text-[10px] text-muted-foreground'>
+            <p className='mt-1 text-xs text-muted-foreground'>
               Visora · 自托管
             </p>
           </div>

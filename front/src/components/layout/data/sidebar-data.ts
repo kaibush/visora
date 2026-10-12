@@ -1,14 +1,9 @@
 import {
   Activity,
-  ChartColumn,
   ChartNoAxesCombined,
   Code2,
-  FileText,
   FolderKanban,
   LayoutDashboard,
-  MonitorSmartphone,
-  MousePointerClick,
-  Share2,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -22,11 +17,6 @@ export const sidebarData: SidebarData = {
       title: '数据分析',
       items: [
         { title: '访问概览', url: '/', icon: LayoutDashboard },
-        { title: '访问趋势', url: '/trends', icon: ChartColumn },
-        { title: '页面分析', url: '/pages', icon: FileText },
-        { title: '来源分析', url: '/sources', icon: Share2 },
-        { title: '受众环境', url: '/audience', icon: MonitorSmartphone },
-        { title: '交互行为', url: '/behavior', icon: MousePointerClick },
         { title: '访问明细', url: '/events', icon: Activity },
       ],
     },

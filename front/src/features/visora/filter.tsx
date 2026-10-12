@@ -88,12 +88,12 @@ export function AnalyticsFilters({
   }
 
   return (
-    <div className='flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3'>
+    <div className='flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-xl border bg-card p-3'>
       <Select
         value={filter.project}
         onValueChange={(project) => setFilter({ ...filter, project })}
       >
-        <SelectTrigger className='w-full sm:w-48' aria-label='筛选项目'>
+        <SelectTrigger className='w-full min-w-0 sm:w-48' aria-label='筛选项目'>
           <Layers className='size-4 text-muted-foreground' />
           <SelectValue />
         </SelectTrigger>
@@ -115,7 +115,7 @@ export function AnalyticsFilters({
           else setDraft({ from: filter.from, to: filter.to })
         }}
       >
-        <SelectTrigger className='w-full sm:w-40' aria-label='日期范围'>
+        <SelectTrigger className='w-full min-w-0 sm:w-40' aria-label='日期范围'>
           <CalendarDays className='size-4 text-muted-foreground' />
           <SelectValue />
         </SelectTrigger>
@@ -146,7 +146,7 @@ export function AnalyticsFilters({
           <Input
             id='range-from'
             type='date'
-            className='w-full sm:w-40'
+            className='w-full min-w-0 sm:w-40'
             required
             value={draft.from}
             onChange={(e) => setDraft({ ...draft, from: e.target.value })}
@@ -158,7 +158,7 @@ export function AnalyticsFilters({
           <Input
             id='range-to'
             type='date'
-            className='w-full sm:w-40'
+            className='w-full min-w-0 sm:w-40'
             required
             value={draft.to}
             onChange={(e) => setDraft({ ...draft, to: e.target.value })}
@@ -178,7 +178,7 @@ export function AnalyticsFilters({
         <Input
           aria-label='用户 ID'
           placeholder='按用户 ID 精确筛选'
-          className='w-full sm:w-44'
+          className='w-full max-w-full min-w-0 sm:w-44'
           maxLength={128}
           value={draftUser}
           onChange={(event) => setDraftUser(event.target.value)}
@@ -203,7 +203,7 @@ export function AnalyticsFilters({
       <span className='hidden text-xs text-muted-foreground xl:inline'>
         {filter.from} — {filter.to} · 上海时间
       </span>
-      <div className='ms-auto flex gap-2'>
+      <div className='flex w-full justify-end gap-2 sm:ms-auto sm:w-auto'>
         <Button
           variant='ghost'
           size='icon'

@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { VisoraTrends } from '@/features/visora/explore'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/trends/')({
-  component: VisoraTrends,
+  beforeLoad: () => {
+    throw redirect({ to: '/', search: { view: 'trends' } })
+  },
 })

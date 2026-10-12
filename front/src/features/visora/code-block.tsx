@@ -10,13 +10,15 @@ export function CodeBlock({
   label?: string
 }) {
   return (
-    <div className='overflow-hidden rounded-lg border bg-muted/40'>
-      <div className='flex items-center justify-between border-b px-4 py-2'>
-        <span className='text-xs text-muted-foreground'>{label}</span>
+    <div className='max-w-full min-w-0 overflow-hidden rounded-lg border bg-muted/40'>
+      <div className='flex items-center justify-between gap-2 border-b px-3 py-2 sm:px-4'>
+        <span className='min-w-0 truncate text-xs text-muted-foreground'>
+          {label}
+        </span>
         <Button
           variant='ghost'
           size='sm'
-          className='h-7 text-xs'
+          className='h-8 shrink-0 text-xs'
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(code)
@@ -30,7 +32,7 @@ export function CodeBlock({
           复制
         </Button>
       </div>
-      <pre className='max-h-96 overflow-auto p-4 text-xs leading-6'>
+      <pre className='max-h-96 max-w-full overflow-auto p-3 text-xs leading-6 break-all whitespace-pre-wrap sm:p-4 sm:break-normal sm:whitespace-pre'>
         <code>{code}</code>
       </pre>
     </div>

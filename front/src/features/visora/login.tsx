@@ -51,7 +51,7 @@ export function VisoraLogin() {
   }
 
   return (
-    <div className='grid min-h-svh lg:grid-cols-2'>
+    <div className='grid min-h-svh max-w-full overflow-x-hidden lg:grid-cols-2'>
       <div className='relative hidden flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:flex'>
         <div className='flex items-center gap-3 text-2xl font-semibold'>
           <span className='rounded-xl bg-indigo-500 p-2'>
@@ -90,7 +90,7 @@ export function VisoraLogin() {
         />
         <p className='text-xs text-slate-500'>Visora Analytics Platform</p>
       </div>
-      <main className='flex items-center justify-center px-6 py-16'>
+      <main className='flex min-w-0 items-center justify-center px-4 py-10 sm:px-6 sm:py-16'>
         <div className='w-full max-w-sm'>
           <div className='mb-10 flex items-center gap-2 text-xl font-semibold lg:hidden'>
             <ChartNoAxesCombined className='text-primary' />
@@ -137,7 +137,9 @@ export function VisoraLogin() {
                   <Input
                     id='password'
                     type='password'
-                    autoComplete={required ? 'new-password' : 'current-password'}
+                    autoComplete={
+                      required ? 'new-password' : 'current-password'
+                    }
                     required
                     minLength={required ? 12 : undefined}
                     value={password}

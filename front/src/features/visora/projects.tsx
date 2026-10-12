@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
@@ -42,6 +42,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -161,6 +168,148 @@ function ProjectEditor({
   )
 }
 
+const touchMenuQuery = '(max-width: 767px), (pointer: coarse)'
+
+function useTouchMenu() {
+  return useSyncExternalStore(
+    (callback) => {
+      const query = window.matchMedia(touchMenuQuery)
+      query.addEventListener('change', callback)
+      return () => query.removeEventListener('change', callback)
+    },
+    () => window.matchMedia(touchMenuQuery).matches,
+    () => false
+  )
+}
+
+function ProjectActions({
+  name,
+  enabled,
+  pending,
+  onEdit,
+  onRotate,
+  onToggle,
+  onDelete,
+}: {
+  name: string
+  enabled: boolean
+  pending: boolean
+  onEdit: () => void
+  onRotate: () => void
+  onToggle: () => void
+  onDelete: () => void
+}) {
+  const touchMenu = useTouchMenu()
+  const [open, setOpen] = useState(false)
+  const label = `${name} 项目操作`
+  const run = (action: () => void) => {
+    setOpen(false)
+    action()
+  }
+  const items = [
+    {
+      label: '编辑设置',
+      icon: Pencil,
+      action: onEdit,
+      destructive: false,
+    },
+    {
+      label: '轮换服务端密钥',
+      icon: KeyRound,
+      action: onRotate,
+      destructive: false,
+    },
+    {
+      label: enabled ? '暂停采集' : '恢复采集',
+      icon: enabled ? Pause : Play,
+      action: onToggle,
+      destructive: false,
+    },
+    {
+      label: '删除项目',
+      icon: Trash2,
+      action: onDelete,
+      destructive: true,
+    },
+  ]
+  if (touchMenu) {
+    return (
+      <>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-11 shrink-0'
+          aria-label={label}
+          aria-haspopup='dialog'
+          onClick={() => setOpen(true)}
+        >
+          <MoreHorizontal className='size-4' />
+        </Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent
+            side='bottom'
+            className='rounded-t-2xl px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]'
+          >
+            <SheetHeader className='px-2 text-left'>
+              <SheetTitle className='truncate'>{name}</SheetTitle>
+              <SheetDescription>项目操作</SheetDescription>
+            </SheetHeader>
+            <div className='grid gap-1 pb-2'>
+              {items.map((item) => (
+                <Button
+                  key={item.label}
+                  variant='ghost'
+                  className={`h-12 justify-start px-3 ${item.destructive ? 'text-destructive hover:text-destructive' : ''}`}
+                  disabled={pending}
+                  onClick={() => run(item.action)}
+                >
+                  <item.icon className='size-4' />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
+    )
+  }
+  return (
+    <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='size-11 shrink-0'
+          aria-label={label}
+        >
+          <MoreHorizontal className='size-4' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-48'>
+        {items.slice(0, -1).map((item) => (
+          <DropdownMenuItem
+            key={item.label}
+            disabled={pending}
+            onClick={item.action}
+          >
+            <item.icon className='size-4' />
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant='destructive'
+          disabled={pending}
+          onClick={items[items.length - 1]?.action}
+        >
+          <Trash2 className='size-4' />
+          删除项目
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function VisoraProjects() {
   const queryClient = useQueryClient()
   const { data, error, isPending, refetch } = useQuery(projectsQuery)
@@ -266,7 +415,7 @@ export function VisoraProjects() {
       <div className='grid gap-5 md:grid-cols-2 xl:grid-cols-3'>
         {projects.map((project) => (
           <Card key={project.id} className='gap-5 shadow-none'>
-            <CardHeader className='flex flex-row items-start gap-3'>
+            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3'>
               <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-semibold text-primary'>
                 {project.name.slice(0, 1).toUpperCase()}
               </div>
@@ -288,48 +437,15 @@ export function VisoraProjects() {
                       : '等待接入'}
                 </Badge>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='size-8'
-                    aria-label={`${project.name} 项目操作`}
-                  >
-                    <MoreHorizontal className='size-4' />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end'>
-                  <DropdownMenuItem onClick={() => setEditor(project)}>
-                    <Pencil className='size-4' />
-                    编辑设置
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setRotate(project)}>
-                    <KeyRound className='size-4' />
-                    轮换服务端密钥
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={update.isPending}
-                    onClick={() => update.mutate(project)}
-                  >
-                    {project.enabled ? (
-                      <Pause className='size-4' />
-                    ) : (
-                      <Play className='size-4' />
-                    )}
-                    {project.enabled ? '暂停采集' : '恢复采集'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant='destructive'
-                    disabled={remove.isPending}
-                    onClick={() => setRemoveTarget(project)}
-                  >
-                    <Trash2 className='size-4' />
-                    删除项目
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <ProjectActions
+                name={project.name}
+                enabled={project.enabled}
+                pending={update.isPending || remove.isPending}
+                onEdit={() => setEditor(project)}
+                onRotate={() => setRotate(project)}
+                onToggle={() => update.mutate(project)}
+                onDelete={() => setRemoveTarget(project)}
+              />
             </CardHeader>
             <CardContent className='space-y-4'>
               <div className='flex items-center gap-2 text-xs text-muted-foreground'>
@@ -357,38 +473,30 @@ export function VisoraProjects() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className='gap-2'>
+            <CardFooter className='grid grid-cols-2 gap-2'>
               <Button
                 variant='outline'
-                className='flex-1'
+                className='min-h-11 min-w-0 px-2'
                 onClick={() => setInstall(project)}
               >
-                <Code2 className='size-4' />
-                接入代码
+                <Code2 className='size-4 shrink-0' />
+                <span className='truncate'>接入代码</span>
               </Button>
               <Button
                 variant='outline'
-                className='flex-1'
+                className='min-h-11 min-w-0 px-2'
                 onClick={() => setCredentials({ project })}
               >
-                <KeyRound className='size-4' />
-                查看密钥
-              </Button>
-              <Button
-                variant='ghost'
-                size='icon'
-                aria-label={`编辑 ${project.name}`}
-                onClick={() => setEditor(project)}
-              >
-                <Pencil className='size-4' />
+                <KeyRound className='size-4 shrink-0' />
+                <span className='truncate'>查看密钥</span>
               </Button>
             </CardFooter>
           </Card>
         ))}
       </div>
-      <div className='flex flex-wrap items-center gap-4 rounded-xl border bg-muted/30 p-5'>
-        <ShieldCheck className='size-6 text-primary' />
-        <div className='flex-1 space-y-1'>
+      <div className='flex flex-col items-start gap-3 rounded-xl border bg-muted/30 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5'>
+        <ShieldCheck className='size-6 shrink-0 text-primary' />
+        <div className='min-w-0 flex-1 space-y-1'>
           <p className='text-sm font-medium'>
             每个项目独立采集，所有数据统一查看
           </p>
@@ -397,7 +505,7 @@ export function VisoraProjects() {
             ID，服务端使用独立密钥。暂停后停止接收新事件；删除项目会同时清除它的全部访问记录。
           </p>
         </div>
-        <Button variant='ghost' asChild>
+        <Button variant='outline' className='w-full sm:w-auto' asChild>
           <Link to='/integrations'>
             接入指南
             <ArrowUpRight className='size-4' />

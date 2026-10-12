@@ -31,7 +31,7 @@ import {
   type VisitorSplit,
 } from './api'
 import { AnalyticsFilters, useAnalyticsFilter } from './filter'
-import { ErrorState, VisoraPage } from './shared'
+import { ErrorState } from './shared'
 
 type Companion = { dimension: string; title: string }
 type BarPoint = { key: string; label: string; count: number; visitors: number }
@@ -91,12 +91,9 @@ function ClickableBars({
   label: string
 }) {
   return (
-    <div className='h-64 w-full sm:h-72' role='img' aria-label={label}>
+    <div className='h-56 w-full min-w-0 sm:h-72' role='img' aria-label={label}>
       <ResponsiveContainer width='100%' height='100%'>
-        <BarChart
-          data={data}
-          margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-        >
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
           <CartesianGrid
             strokeDasharray='3 5'
             vertical={false}
@@ -186,7 +183,7 @@ function RankList({
       {rows.map((row) => {
         const share = total ? Math.round((row.count / total) * 100) : 0
         const active = selected === row.key
-        const className = `relative w-full overflow-hidden rounded-md px-3 py-2.5 text-left ${active ? 'bg-primary/5 ring-1 ring-primary' : onSelect ? 'hover:bg-muted/70' : ''}`
+        const className = `relative w-full min-h-11 overflow-hidden rounded-md px-3 py-2.5 text-left ${active ? 'bg-primary/5 ring-1 ring-primary' : onSelect ? 'hover:bg-muted/70' : ''}`
         if (!onSelect) {
           return (
             <div key={row.key || row.name} className={className}>
@@ -320,7 +317,7 @@ function DimensionExplorer({
         {!selected && (
           <Card className='shadow-none'>
             <CardContent className='py-16 text-center text-sm text-muted-foreground'>
-              从左侧选择一个条目。切换上方的项目后，这里只保留该系统自己的数据。
+              从列表中选择一个条目。切换上方的项目后，这里只保留该系统自己的数据。
             </CardContent>
           </Card>
         )}
@@ -449,10 +446,7 @@ export function VisoraTrends() {
     setDate((current) => (current === key ? null : key))
 
   return (
-    <VisoraPage
-      title='访问趋势'
-      description='用柱状图看每天的浏览量和访客。点击某一天可以下钻到小时、页面和来源；选择单个项目后只看该系统。'
-    >
+    <>
       <FilterBar />
       {report.error && (
         <ErrorState error={report.error} retry={() => void report.refetch()} />
@@ -565,17 +559,14 @@ export function VisoraTrends() {
           </CardContent>
         </Card>
       )}
-    </VisoraPage>
+    </>
   )
 }
 
 export function VisoraPages() {
   const { filter } = useAnalyticsFilter()
   return (
-    <VisoraPage
-      title='页面分析'
-      description='查看哪些页面被访问。点击页面可下钻每日趋势、来源，以及它属于哪个系统。'
-    >
+    <>
       <FilterBar />
       <DimensionExplorer
         dimension='path'
@@ -589,17 +580,14 @@ export function VisoraPages() {
             : []),
         ]}
       />
-    </VisoraPage>
+    </>
   )
 }
 
 export function VisoraSources() {
   const { filter } = useAnalyticsFilter()
   return (
-    <VisoraPage
-      title='来源分析'
-      description='查看访客从哪里进入。没有来源时记为直接访问。点击来源可看到落地页和每天的变化。'
-    >
+    <>
       <FilterBar />
       <DimensionExplorer
         dimension='referrer'
@@ -613,7 +601,7 @@ export function VisoraSources() {
             : []),
         ]}
       />
-    </VisoraPage>
+    </>
   )
 }
 
@@ -641,10 +629,7 @@ export function VisoraAudience() {
       ]
     : []
   return (
-    <VisoraPage
-      title='受众环境'
-      description='按设备、浏览器、系统和语言查看访客。新访客与回访按项目分别计算，不会把其他系统的历史访问算进来。'
-    >
+    <>
       <FilterBar />
       {visitors.error && (
         <ErrorState
@@ -697,16 +682,13 @@ export function VisoraAudience() {
           </TabsContent>
         ))}
       </Tabs>
-    </VisoraPage>
+    </>
   )
 }
 
 export function VisoraBehavior() {
   return (
-    <VisoraPage
-      title='交互行为'
-      description='自动记录点击、切换和提交，以及各系统手动上报的业务结果。这里只记录操作名称，不记录输入内容。'
-    >
+    <>
       <FilterBar />
       <section className='space-y-3'>
         <div>
@@ -741,6 +723,6 @@ export function VisoraBehavior() {
           companions={[{ dimension: 'path', title: '发生页面' }]}
         />
       </section>
-    </VisoraPage>
+    </>
   )
 }

@@ -11,18 +11,27 @@
     scrollbar-color: var(--border) transparent;
   }
   html {
-    @apply overflow-x-hidden;
+    max-width: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
+    max-width: 100%;
     padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
   }
+  #root {
+    min-width: 0;
+    max-width: 100%;
+  }
 
-  /* Override Radix scroll locking for sticky headers */
-  body[data-scroll-locked] {
-    overflow: unset !important;
+  /* Keep sticky headers usable on desktop without breaking iOS popovers. */
+  @media (min-width: 768px) {
+    body[data-scroll-locked] {
+      overflow: unset !important;
+    }
   }
 
   /* Cursor pointer for buttons */
@@ -36,6 +45,7 @@
     input,
     select,
     textarea {
+      max-width: 100%;
       font-size: 16px !important;
     }
   }
@@ -86,5 +96,23 @@
   }
   to {
     height: 0;
+  }
+}
+
+@layer base {
+  [data-slot='sidebar-wrapper'],
+  [data-slot='sidebar-inset'],
+  [data-slot='card'],
+  [data-slot='card-header'],
+  [data-slot='card-content'],
+  [data-slot='card-footer'],
+  [data-slot='table-container'] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .recharts-responsive-container,
+  .recharts-wrapper {
+    max-width: 100% !important;
   }
 }
