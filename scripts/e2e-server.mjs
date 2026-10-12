@@ -11,7 +11,7 @@ const config = loadConfig(
     databaseUrl: '',
     autoMigrate: true,
   },
-  {}
+  { VISORA_LOGIN_RATE_LIMIT: '50' } // Shared test server runs multiple independent login scenarios.
 )
 const app = await buildApp({ config, logger: false })
 await app.listen({ port: 4317, host: '127.0.0.1' })

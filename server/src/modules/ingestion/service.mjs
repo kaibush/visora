@@ -1,10 +1,11 @@
+import { isIP } from 'node:net'
 import { createHmac } from 'node:crypto'
 import { AppError } from '../../shared/errors.mjs'
 import { parseAgent } from './user-agent.mjs'
 import { eventSchema, batchSchema } from './schemas.mjs'
 
 export function createIngestionService({ repository, projects, salt, clock, retentionDays }) {
-  async function write(project, events, source, userAgent = '') {
+  async function write(project, events, source, userAgent = '', ip = null) {
     const now = clock()
     const identity = (...parts) =>
       createHmac('sha256', salt)
@@ -37,6 +38,10 @@ export function createIngestionService({ repository, projects, salt, clock, rete
         day: new Date(timestamp).toISOString().slice(0, 10),
         visitor: identity(event.visitorId),
         session: identity(event.visitorId, event.sessionId),
+        ip: source === 'browser' ? (isIP(ip ?? '') ? ip : null) : (event.ip ?? null),
+        action: event.type === 'event' ? (event.interaction?.action ?? null) : null,
+        target: event.type === 'event' ? (event.interaction?.target ?? null) : null,
+        label: event.type === 'event' ? (event.interaction?.label ?? null) : null,
         userId: event.user?.id ?? null,
         userName: event.user?.name || null,
         userEmail: event.user?.email || null,
@@ -51,9 +56,9 @@ export function createIngestionService({ repository, projects, salt, clock, rete
   }
   return {
     authorizeBrowser: projects.authorizeBrowser,
-    async collect({ siteId, origin, payload, userAgent }) {
+    async collect({ siteId, origin, payload, userAgent, ip }) {
       const project = await projects.authorizeBrowser(siteId, origin)
-      return write(project, [eventSchema.parse(payload)], 'browser', userAgent)
+      return write(project, [eventSchema.parse(payload)], 'browser', userAgent, ip)
     },
     async ingest({ token, payload }) {
       const project = await projects.authorizeServer(token)

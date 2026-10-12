@@ -1,4 +1,4 @@
-import { Op, fn, col } from 'sequelize'
+import { Op, fn, col, literal } from 'sequelize'
 
 function eventFilter(filter, type) {
   return {
@@ -39,14 +39,20 @@ export function createAnalyticsRepository({ models }) {
       )
     },
     async dailyTrend(filter) {
+      const dialect = Event.sequelize.getDialect()
+      const bucket = filter.timezone !== 'Asia/Shanghai' ? col('day') : literal({
+        sqlite: "strftime('%Y-%m-%d', occurred_at / 1000, 'unixepoch', '+8 hours')",
+        postgres: "to_char(to_timestamp(occurred_at / 1000.0) AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD')",
+        mysql: "DATE_FORMAT(DATE_ADD('1970-01-01 00:00:00', INTERVAL (occurred_at / 1000 + 28800) SECOND), '%Y-%m-%d')",
+      }[dialect])
       const rows = await Event.findAll({
-        attributes: ['day', ...pageviewAttributes()],
+        attributes: [[bucket, 'dateBucket'], ...pageviewAttributes()],
         where: eventFilter(filter, 'pageview'),
-        group: ['day'],
-        order: [['day', 'ASC']],
+        group: [bucket],
+        order: [[bucket, 'ASC']],
         raw: true,
       })
-      return rows.map((row) => ({ date: row.day, ...pageviewNumbers(row) }))
+      return rows.map((row) => ({ date: row.dateBucket, ...pageviewNumbers(row) }))
     },
     async dimensions(filter) {
       const entries = await Promise.all(
@@ -134,6 +140,7 @@ export function createAnalyticsRepository({ models }) {
           'userId',
           'userName',
           'userEmail',
+          'ip', 'action', 'target', 'label', 'visitor', 'session',
           'type',
           'name',
           'occurredAt',
@@ -160,6 +167,12 @@ export function createAnalyticsRepository({ models }) {
         event_id: row.eventId,
         project_id: row.projectId,
         project_name: row['project.name'],
+        ip: row.ip ?? null,
+        action: row.action ?? null,
+        target: row.target ?? null,
+        label: row.label ?? null,
+        visitor: row.visitor,
+        session: row.session,
         user_id: row.userId ?? null,
         user_name: row.userName ?? null,
         user_email: row.userEmail ?? null,

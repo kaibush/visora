@@ -33,7 +33,7 @@ export function createAnalyticsService({ repository, projects, clock }) {
       const byDate = new Map(trendRows.map((row) => [row.date, row]))
       const trend = []
       for (let t = filter.start; t < filter.end; t += day) {
-        const date = new Date(t).toISOString().slice(0, 10)
+        const date = new Date(t + filter.offset).toISOString().slice(0, 10)
         trend.push(byDate.get(date) ?? { date, pv: 0, uv: 0 })
       }
       return {
@@ -44,7 +44,7 @@ export function createAnalyticsService({ repository, projects, clock }) {
         dimensions,
         customEvents,
         projects: performance,
-        range: { from: filter.from, to: filter.to, timezone: 'UTC' },
+        range: { from: filter.from, to: filter.to, timezone: filter.timezone },
       }
     },
     async events(query) {
@@ -60,7 +60,7 @@ export function createAnalyticsService({ repository, projects, clock }) {
       if ((await repository.eventCount(filter)) > exportLimit)
         throw new AppError('INVALID_INPUT', '单次最多导出 10,000 条，请缩小日期范围或选择单个项目')
       const rows = await repository.eventRows(filter, exportLimit, 0)
-      return { csv: toCsv(rows), filename: `visora-${filter.from}-${filter.to}.csv` }
+      return { csv: toCsv(rows, filter.timezone), filename: `visora-${filter.from}-${filter.to}.csv` }
     },
   }
 }

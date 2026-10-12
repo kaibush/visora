@@ -28,6 +28,7 @@ export async function ingestionRoutes(app, { service, config }) {
         siteId: request.params.siteId,
         origin: request.headers.origin,
         payload: request.body,
+        ip: request.ip,
         userAgent: (request.headers['user-agent'] ?? '').slice(0, 1024),
       })
       return reply.code(202).send(result)

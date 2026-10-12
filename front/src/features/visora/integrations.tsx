@@ -31,7 +31,7 @@ export function VisoraIntegrations() {
   return (
     <VisoraPage
       title='接入指南'
-      description='推荐只改前端：安装脚本、同步用户，即可自动查看每次访问的详情。'
+      description='一段脚本自动采集访问与常见交互；登录用户关联为可选增强。'
     >
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {data && !data.projects.length && (
@@ -101,10 +101,22 @@ export function VisoraIntegrations() {
                 <TabsTrigger value='users'>登录用户</TabsTrigger>
               </TabsList>
               <TabsContent value='quickstart' className='space-y-5'>
+                <div className='rounded-md bg-muted/50 p-3 text-sm leading-7'>
+                  默认自动记录按钮、链接、标签页、菜单点击，选择框与开关变更、表单提交尝试。
+                  支持动态渲染控件，不需要逐个绑定事件。输入框内容、密码和表单数据不采集。
+                  点击不代表业务成功；支付成功、任务完成等结果可用自定义事件补充。
+                  敏感区域添加 data-visora-ignore；自定义控件可用 data-visora-event="操作名" 命名。
+                  脚本添加 data-autocapture="false" 可关闭交互采集。每页每分钟最多自动记录 60 次交互。
+                  跨域 iframe、封闭 Shadow DOM 和 canvas 内部控件需单独集成。
+                </div>
+                <p className='text-xs leading-6 text-muted-foreground'>
+                  IP 来自采集请求，匿名和登录访问均记录。本机测试通常为 127.0.0.1 或 ::1。
+                  反向代理部署需正确配置可信代理；历史记录无法补回 IP。
+                </p>
                 <p className='text-sm leading-7 text-muted-foreground'>
                   new-api、grok-iq
                   及其他网站都按同一种方式接入。只需在前端安装一次脚本，
-                  再从现有登录状态传入用户；页面访问与 SPA
+                  即可采集匿名访问、IP 和常见控件交互；页面访问与 SPA
                   路由变化自动记录，无需修改业务后端或数据库。
                 </p>
                 <p className='text-sm font-medium'>
@@ -112,8 +124,8 @@ export function VisoraIntegrations() {
                   &lt;head&gt;
                 </p>
                 <CodeBlock
-                  label='HTML · 等待用户状态就绪，自动采集首屏与路由'
-                  code={browserSnippet(project.siteId, true)}
+                  label='HTML · 自动采集访问与交互，无需逐页埋点'
+                  code={browserSnippet(project.siteId)}
                 />
                 <p className='rounded-md bg-muted/50 p-3 text-xs leading-6 text-muted-foreground'>
                   当前允许来源：
@@ -123,7 +135,7 @@ export function VisoraIntegrations() {
                   来源必须包含协议、域名与端口；脚本地址必须能被访客浏览器访问。
                 </p>
                 <p className='text-sm font-medium'>
-                  2. 复制用户同步模块，在统一更新登录状态的位置调用
+                  2. 可选：需要关联登录用户时，在统一登录状态处同步
                 </p>
                 <CodeBlock
                   label='JavaScript · 保存为 src/lib/visora.js'
@@ -144,9 +156,9 @@ syncVisoraUser(currentUser ? {
                 />
                 <p className='text-xs leading-6 text-muted-foreground'>
                   同步模块兼容脚本先加载、用户先加载，未加载脚本时只保留最新的用户状态。
-                  第一次传入有效用户或 null
-                  后，自动记录当前页面并继续监听路由；不需要手动调用 pageview。
-                  如果一直不传入状态，就不会采集。刷新页面后需要重新同步；重复同步不会增加
+                  默认立即采集匿名访问，身份同步只影响后续事件。若首屏必须等待登录态，
+                  可添加 data-wait-for-user="true"，首次传入用户或 null 后才开始采集。
+                  刷新页面后需要重新同步；重复同步不会增加
                   PV。 TypeScript 项目可同时把 sdk/browser.d.ts 复制为
                   src/lib/visora.d.ts。
                 </p>
@@ -154,7 +166,7 @@ syncVisoraUser(currentUser ? {
                   3. 打开目标网站，再到「访问明细」按项目或用户 ID 查看
                 </p>
                 <p className='text-sm leading-7 text-muted-foreground'>
-                  可看到访问时间、页面路径、来源站点、设备、浏览器、操作系统、语言，以及已传入的用户
+                  可看到 IP、匿名访客及会话标识、点击目标、控件标签、访问时间、页面路径、来源站点、设备、浏览器、操作系统、语言，以及已传入的用户
                   ID、名称和邮箱， 并按项目、日期、用户 ID
                   筛选和导出。未登录访客显示为匿名。
                 </p>
@@ -268,7 +280,7 @@ window.visora?.reset()`}
                   user.id 必填，name 和 email 可选。identify
                   只影响后续事件，不补写历史记录，也不增加 PV。
                   身份只保留在当前页面内存，刷新后需由业务系统重新传入。首屏也需关联用户时，
-                  使用「快速接入」的 data-wait-for-user="true"，第一次传入用户或
+                  添加 data-wait-for-user="true"，第一次传入用户或
                   null 后自动开始采集。
                 </p>
                 <p className='text-xs leading-6 text-muted-foreground'>
@@ -289,8 +301,8 @@ window.visora?.reset()`}
                 <p className='text-xs leading-6 text-muted-foreground'>
                   需要事先征得统计同意的网站，应在用户同意后才加载脚本。默认尊重
                   Do Not Track 和 Global Privacy Control，不采集
-                  IP、查询参数、URL fragment
-                  或完整来源地址。用户信息仅在主动调用 identify 或通过服务端提供
+                  输入值、查询参数、URL fragment
+                  或完整来源地址。IP 由采集服务识别并保存；登录身份仅在主动调用 identify 或通过服务端提供
                   user 时记录。
                 </p>
               </TabsContent>
@@ -311,7 +323,7 @@ window.visora?.reset()`}
             <p className='text-muted-foreground'>
               PV 为页面访问次数，UV
               为所选日期内去重的访客数。访客与会话在不同项目之间隔离；聚合 UV
-              表示各项目访客之和。网页会话在 30 分钟无事件后更新。所有日期按 UTC
+              表示各项目访客之和。网页会话在 30 分钟无事件后更新。看板日期按上海时间
               统计。
             </p>
           </div>
@@ -319,7 +331,7 @@ window.visora?.reset()`}
             <h3 className='mb-2 font-medium'>所有网站使用同一套接入方式</h3>
             <p className='text-muted-foreground'>
               在 HTML
-              入口加载脚本，在统一用户状态更新处同步身份，便能自动记录页面访问。
+              入口加载脚本，便能自动记录页面访问和常见交互；关联登录用户只需统一同步身份。
               业务系统无需实现统计接口或维护统计表；同一次访问使用一条 Visora
               采集路径，避免重复计数。
             </p>

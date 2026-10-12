@@ -320,7 +320,7 @@ export function VisoraProjects() {
                 </div>
                 <div>
                   <p className='text-xs text-muted-foreground'>
-                    最近访问 · UTC
+                    最近访问 · 上海时间
                   </p>
                   <p className='mt-2 text-xs'>
                     {formatTime(project.lastEvent)}

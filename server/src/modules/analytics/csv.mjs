@@ -1,9 +1,10 @@
-export function toCsv(rows) {
+export function toCsv(rows, timezone = 'UTC') {
   const columns = [
     'project_name',
     'user_id',
     'user_name',
     'user_email',
+    'ip', 'action', 'target', 'label', 'visitor', 'session',
     'type',
     'name',
     'occurred_at',
@@ -27,7 +28,7 @@ export function toCsv(rows) {
       columns.join(','),
       ...rows.map((row) =>
         columns
-          .map((key) => cell(key === 'occurred_at' ? new Date(row[key]).toISOString() : row[key]))
+          .map((key) => cell(key === 'occurred_at' ? (timezone === 'Asia/Shanghai' ? new Date(row[key] + 8 * 3600000).toISOString().replace('Z', '+08:00') : new Date(row[key]).toISOString()) : row[key]))
           .join(',')
       ),
     ].join('\r\n')

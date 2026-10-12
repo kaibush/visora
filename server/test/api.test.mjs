@@ -171,8 +171,8 @@ test('collector allows exact origins only and strips private URL data; keys are 
   assert.ok(!listed.body.includes('key_ciphertext'))
   assert.equal(listed.json().projects[0].totalEvents, 1)
   const rows = (await admin('GET', '/api/events')).json().events
-  assert.equal(rows[0].visitor, undefined)
-  assert.equal(rows[0].session, undefined)
+  assert.equal(rows[0].visitor, stored.visitor)
+  assert.equal(rows[0].session, stored.session)
 })
 
 test('aggregate reports isolate project identities, deduplicate retry IDs, zero-fill dates and separate custom events', async (t) => {
@@ -628,4 +628,62 @@ test('browser identity is an optional client declaration, distinguished from ser
   assert.equal(rows.total, 1)
   assert.equal(rows.events[0].source, 'browser')
   assert.equal(rows.events[0].user_name, 'Browser User')
+})
+
+test('anonymous browser IP comes from transport, interaction context survives reporting and CSV', async (t) => {
+  const { app, admin, create, send } = await fixture(t)
+  const { project, key } = await create()
+  const response = await app.inject({
+    method: 'POST', url: `/api/collect/${project.siteId}`, remoteAddress: '192.0.2.8',
+    headers: { origin: 'https://app.example.com', 'x-forwarded-for': '198.51.100.9' },
+    payload: event('auto-click', { type: 'event', name: 'click:刷新', ip: '203.0.113.1',
+      interaction: { action: 'click', target: 'button:nth-of-type(1)', label: '刷新', value: 'secret' } }),
+  })
+  assert.equal(response.statusCode, 202, response.body)
+  const rows = (await admin('GET', `/api/events?project=${project.id}`)).json().events
+  assert.equal(rows[0].ip, '192.0.2.8')
+  assert.equal(rows[0].user_id, null)
+  assert.equal(rows[0].action, 'click')
+  assert.equal(rows[0].label, '刷新')
+  assert.ok(rows[0].visitor && rows[0].session)
+  assert.ok(!JSON.stringify(rows).includes('secret'))
+  const csv = await admin('GET', `/api/export?project=${project.id}`)
+  assert.ok(csv.body.includes('192.0.2.8'))
+  assert.ok(csv.body.includes('button:nth-of-type(1)'))
+  assert.equal((await send(key, [event('forwarded', { ip: '2001:db8::1' }), event('no-ip')])).statusCode, 202)
+  assert.equal((await app.db.models.Event.findOne({ where: { eventId: 'forwarded' } })).ip, '2001:db8::1')
+  assert.equal((await app.db.models.Event.findOne({ where: { eventId: 'no-ip' } })).ip, null)
+  assert.equal((await send(key, [event('bad-ip', { ip: 'not-an-ip' })])).statusCode, 400)
+})
+
+test('explicit trusted proxy configuration resolves forwarded browser IP', async (t) => {
+  const { app, create } = await fixture(t, { trustProxy: true })
+  const { project } = await create()
+  await app.inject({ method: 'POST', url: `/api/collect/${project.siteId}`, remoteAddress: '127.0.0.1',
+    headers: { origin: 'https://app.example.com', 'x-forwarded-for': '198.51.100.9' },
+    payload: event('proxied'),
+  })
+  assert.equal((await app.db.models.Event.findOne()).ip, '198.51.100.9')
+})
+
+test('Shanghai filters, daily buckets and CSV agree across the UTC date boundary', async (t) => {
+  const { admin, create, send } = await fixture(t)
+  const { project, key } = await create()
+  await send(key, [
+    event('before-shanghai-midnight', { occurredAt: '2026-10-10T15:59:59Z' }),
+    event('at-shanghai-midnight', { occurredAt: '2026-10-10T16:00:00Z' }),
+    event('end-shanghai-day', { occurredAt: '2026-10-11T15:59:59Z' }),
+    event('next-shanghai-day', { occurredAt: '2026-10-11T16:00:00Z' }),
+  ])
+  const query = `project=${project.id}&from=2026-10-11&to=2026-10-11&timezone=Asia%2FShanghai`
+  const report = (await admin('GET', `/api/analytics?${query}`)).json()
+  assert.equal(report.range.timezone, 'Asia/Shanghai')
+  assert.equal(report.totals.pv, 2)
+  assert.deepEqual(report.trend, [{ date: '2026-10-11', pv: 2, uv: 1 }])
+  const rows = (await admin('GET', `/api/events?${query}`)).json()
+  assert.equal(rows.total, 2)
+  const csv = (await admin('GET', `/api/export?${query}`)).body
+  assert.ok(csv.includes('2026-10-11T00:00:00.000+08:00'))
+  assert.ok(csv.includes('2026-10-11T23:59:59.000+08:00'))
+  assert.ok(!csv.includes('next-shanghai-day'))
 })

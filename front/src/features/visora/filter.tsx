@@ -15,7 +15,9 @@ import {
 import { projectsQuery } from './api'
 
 const date = (offset = 0) =>
-  new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10)
+  new Date(Date.now() + offset * 86400000 + 8 * 3600000)
+    .toISOString()
+    .slice(0, 10)
 type Filter = { project: string; from: string; to: string; userId: string }
 const FilterContext = createContext<{
   filter: Filter
@@ -36,7 +38,13 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
 export function useAnalyticsFilter() {
   const context = useContext(FilterContext)
   if (!context) throw new Error('AnalyticsProvider is required')
-  return { ...context, query: new URLSearchParams(context.filter).toString() }
+  return {
+    ...context,
+    query: new URLSearchParams({
+      ...context.filter,
+      timezone: 'Asia/Shanghai',
+    }).toString(),
+  }
 }
 
 export function AnalyticsFilters({
@@ -193,7 +201,7 @@ export function AnalyticsFilters({
         )}
       </form>
       <span className='hidden text-xs text-muted-foreground xl:inline'>
-        {filter.from} — {filter.to} · UTC
+        {filter.from} — {filter.to} · 上海时间
       </span>
       <div className='ms-auto flex gap-2'>
         <Button

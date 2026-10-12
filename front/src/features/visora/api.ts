@@ -70,6 +70,12 @@ export type VisitEvent = {
   project_name: string
   user_id: string | null
   user_name: string | null
+  ip: string | null
+  action: string | null
+  target: string | null
+  label: string | null
+  visitor: string
+  session: string
   user_email: string | null
   type: 'pageview' | 'event'
   name: string
@@ -98,7 +104,8 @@ export const formatNumber = (n: number) =>
 export const formatTime = (n: number | null) =>
   n
     ? new Intl.DateTimeFormat('zh-CN', {
-        timeZone: 'UTC',
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',

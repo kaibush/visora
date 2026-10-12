@@ -150,6 +150,58 @@
       send(Object.assign(metadata(), { type: 'event', name: name.trim() }))
     },
   }
+  // Delegation covers controls rendered later by React/Vue, including open shadow roots.
+  var privateSelector = '[data-visora-ignore],.visora-ignore,[contenteditable]:not([contenteditable="false"]),input[type="password"],input[type="hidden"]'
+  var controls = 'button,a[href],summary,input[type="button"],input[type="submit"],input[type="checkbox"],input[type="radio"],select,[role="button"],[role="tab"],[role="switch"],[role="checkbox"],[role="radio"],[role="menuitem"],[role="option"],[data-visora-event]'
+  var autoWindow = 0
+  var autoCount = 0
+  function captureInteraction(event) {
+    if (!event.isTrusted || !canSend()) return
+    var chain = event.composedPath ? event.composedPath() : [event.target]
+    if (chain.some(function (node) {
+      return node.closest && node.closest(privateSelector)
+    })) return
+    var selector = event.type === 'submit' ? 'form' : event.type === 'change'
+      ? 'select,input[type="checkbox"],input[type="radio"]' : controls
+    var element
+    for (var i = 0; i < chain.length; i++) {
+      if (chain[i].matches && chain[i].matches(selector)) { element = chain[i]; break }
+    }
+    if (!element || element.disabled || element.getAttribute('aria-disabled') === 'true') return
+    // Checkbox/radio/select changes have their own event; avoid double counting clicks.
+    if (event.type === 'click' && element.matches('select,input[type="checkbox"],input[type="radio"]')) return
+    if (element.closest(privateSelector)) return
+    var parts = []
+    for (var node = element; node && parts.length < 6; node = node.parentElement) {
+      var index = 1
+      for (var sibling = node.previousElementSibling; sibling; sibling = sibling.previousElementSibling) {
+        if (sibling.tagName === node.tagName) index++
+      }
+      parts.unshift(node.tagName.toLowerCase() + ':nth-of-type(' + index + ')')
+    }
+    var target = parts.join(' > ').slice(0, 512)
+    // Never read field values, form contents, hrefs, IDs, classes or arbitrary data attributes.
+    var label = element.getAttribute('data-visora-event') || element.getAttribute('aria-label') || ''
+    if (!label && element.matches('button,a,summary,[role="button"],[role="tab"],[role="menuitem"]') &&
+        !element.querySelector('input,textarea,select,' + privateSelector)) label = element.textContent || ''
+    label = label.replace(/\s+/g, ' ').trim()
+    // Dynamic labels can contain personal data; omit common email/token-like values.
+    if (label.length > 120 || /@|https?:|\b\d{7,}\b|[A-Za-z0-9_-]{32,}/.test(label)) label = ''
+    var now = Date.now()
+    if (now - autoWindow >= 60000) { autoWindow = now; autoCount = 0 }
+    if (autoCount >= 60) return
+    autoCount++
+    send(Object.assign(metadata(), {
+      type: 'event',
+      name: (event.type + ':' + (label || target)).slice(0, 80),
+      interaction: { action: event.type, target: target, label: label },
+    }))
+  }
+  if (!manual && script.dataset.autocapture !== 'false') {
+    ;['click', 'change', 'submit'].forEach(function (type) {
+      document.addEventListener(type, captureInteraction, true)
+    })
+  }
   if (!manual) {
     ;['pushState', 'replaceState'].forEach(function (method) {
       var original = history[method]

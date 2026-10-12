@@ -5,7 +5,9 @@ import { projectKeyCiphertext } from './migrations/003-project-key-ciphertext.mj
 
 import { eventUser } from './migrations/004-event-user.mjs'
 
-const migrations = [initialSchema, eventDay, projectKeyCiphertext, eventUser]
+import { eventContext } from './migrations/005-event-context.mjs'
+
+const migrations = [initialSchema, eventDay, projectKeyCiphertext, eventUser, eventContext]
 export const latestVersion = migrations.at(-1).version
 
 async function currentVersion(models) {

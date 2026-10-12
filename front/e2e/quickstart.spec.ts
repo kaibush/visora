@@ -84,7 +84,7 @@ test('quick integration waits for identity, handles either load order, and keeps
 
   await page.goto('/integrations')
   await expect(page.getByRole('tab', { name: '快速接入（推荐）' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('tabpanel').locator('code').filter({ hasText: 'data-wait-for-user="true"' })).toBeVisible()
+  await expect(page.getByRole('tabpanel').locator('code').filter({ hasText: '/tracker.js' })).toBeVisible()
   await expect(page.getByRole('tabpanel').locator('code').filter({ hasText: 'export function syncVisoraUser' })).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

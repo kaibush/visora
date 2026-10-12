@@ -32,6 +32,12 @@ export const eventSchema = z
     visitorId: id,
     sessionId: id,
     user: userSchema.nullish(),
+    ip: z.ipv4().or(z.ipv6()).optional(),
+    interaction: z.object({
+      action: z.enum(['click', 'change', 'submit']),
+      target: z.string().min(1).max(512),
+      label: z.string().max(120).default(''),
+    }).optional(),
     type: z.enum(['pageview', 'event']).default('pageview'),
     name: z.string().trim().min(1).max(80).optional(),
     path: z

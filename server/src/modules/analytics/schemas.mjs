@@ -11,20 +11,22 @@ const dateString = z
   }, '日期无效')
 
 export function parseFilter(query, now) {
-  const today = new Date(now).toISOString().slice(0, 10)
+  const timezone = z.enum(['UTC', 'Asia/Shanghai']).default('UTC').parse(query.timezone)
+  const offset = timezone === 'Asia/Shanghai' ? 8 * 3600000 : 0
+  const today = new Date(now + offset).toISOString().slice(0, 10)
   const input = z
     .object({
       project: z.string().max(80).default('all'),
       userId: z.string().trim().max(128).default(''),
-      from: dateString.default(new Date(now - 6 * day).toISOString().slice(0, 10)),
+      from: dateString.default(new Date(now + offset - 6 * day).toISOString().slice(0, 10)),
       to: dateString.default(today),
       page: z.coerce.number().int().min(1).max(100000).default(1),
     })
     .parse(query)
-  const start = Date.parse(input.from)
-  const end = Date.parse(input.to) + day
+  const start = Date.parse(input.from) - offset
+  const end = Date.parse(input.to) - offset + day
   if (end <= start || end - start > 366 * day) {
     throw new AppError('INVALID_INPUT', '日期范围必须在 1–366 天之间')
   }
-  return { ...input, start, end }
+  return { ...input, start, end, timezone, offset }
 }

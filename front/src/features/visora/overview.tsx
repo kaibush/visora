@@ -282,7 +282,7 @@ export function VisoraOverview() {
                         color: 'var(--foreground)',
                         fontSize: 12,
                       }}
-                      labelFormatter={(value) => `${String(value)} · UTC`}
+                      labelFormatter={(value) => `${String(value)} · 上海时间`}
                     />
                     <Area
                       isAnimationActive={false}
@@ -358,7 +358,7 @@ export function VisoraOverview() {
                     <TableHead className='text-right'>浏览量</TableHead>
                     <TableHead className='text-right'>访客</TableHead>
                     <TableHead className='hidden text-right sm:table-cell'>
-                      最近访问（UTC）
+                      最近访问（上海时间）
                     </TableHead>
                   </TableRow>
                 </TableHeader>

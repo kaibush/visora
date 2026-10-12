@@ -44,7 +44,7 @@ export function VisoraPage({
         {children}
         <footer className='flex flex-wrap justify-between gap-2 border-t pt-5 text-xs text-muted-foreground'>
           <span>Visora · 让每一次访问，都有迹可循</span>
-          <span>UTC 时区 · 访客身份按项目隔离</span>
+          <span>上海时区 · 访客身份按项目隔离</span>
         </footer>
       </Main>
     </>
