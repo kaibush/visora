@@ -68,6 +68,9 @@ export type VisitEvent = {
   id: number
   project_id: string
   project_name: string
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
   type: 'pageview' | 'event'
   name: string
   occurred_at: number

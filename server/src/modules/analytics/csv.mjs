@@ -1,6 +1,9 @@
 export function toCsv(rows) {
   const columns = [
     'project_name',
+    'user_id',
+    'user_name',
+    'user_email',
     'type',
     'name',
     'occurred_at',

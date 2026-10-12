@@ -5,11 +5,33 @@ const id = z
   .min(1)
   .max(128)
   .regex(/^[a-zA-Z0-9_.:@-]+$/)
+// This is business-system identity, not a Visora login or a credential.
+export const userSchema = z.object({
+  id: z
+    .union([z.string(), z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)])
+    .transform((value) => String(value).trim())
+    .pipe(
+      z
+        .string()
+        .min(1)
+        .max(128)
+        .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), '用户 ID 不能包含控制字符')
+    ),
+  name: z.string().trim().max(120).nullish(),
+  email: z
+    .string()
+    .trim()
+    .max(254)
+    .pipe(z.union([z.string().email(), z.literal('')]))
+    .nullish(),
+})
+
 export const eventSchema = z
   .object({
     eventId: id,
     visitorId: id,
     sessionId: id,
+    user: userSchema.nullish(),
     type: z.enum(['pageview', 'event']).default('pageview'),
     name: z.string().trim().min(1).max(80).optional(),
     path: z

@@ -13,8 +13,16 @@ test('create project, track a real SPA, inspect aggregate data, export CSV and l
   await page.getByLabel('项目名称').fill('new-api E2E')
   await page.getByLabel('允许的网站来源').fill('http://127.0.0.1:4318')
   await page.getByRole('button', { name: '创建项目', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '保存 new-api E2E 的服务端密钥' })).toBeVisible()
-  await page.getByRole('button', { name: '我已保存' }).click()
+  await expect(page.getByRole('heading', { name: 'new-api E2E 的服务端密钥' })).toBeVisible()
+  const key = await page.getByRole('dialog').locator('code').innerText()
+  await page.getByRole('button', { name: '关闭', exact: true }).click()
+  await page.reload()
+  await page.locator('[data-slot="card"]').filter({ has: page.getByText('new-api E2E', { exact: true }) }).getByRole('button', { name: '查看密钥', exact: true }).click()
+  await expect(page.getByRole('dialog').locator('code')).toHaveText(key)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:4317' })
+  await page.getByRole('dialog').getByRole('button', { name: '复制', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(key)
+  await page.getByRole('button', { name: '关闭', exact: true }).click()
   const { projects } = await (await page.request.get('/api/projects')).json()
   const project = projects.find((p: { name: string }) => p.name === 'new-api E2E')
   const website = await context.newPage()
@@ -43,6 +51,8 @@ test('create project, track a real SPA, inspect aggregate data, export CSV and l
   const download = await downloadPromise
   expect(download.suggestedFilename()).toMatch(/^visora-.*\.csv$/)
   await page.getByRole('link', { name: '接入指南', exact: true }).first().click()
+  await page.getByRole('combobox', { name: '选择接入项目' }).click()
+  await page.getByRole('option', { name: 'new-api E2E', exact: true }).click()
   await expect(page.getByText(project.siteId, { exact: true })).toBeVisible()
   await page.getByRole('tab', { name: '服务端 API' }).click()
   await expect(page.getByText('Shell · 先设置 VISORA_SERVER_KEY')).toBeVisible()
@@ -77,4 +87,71 @@ test('tracker respects privacy signals, hash routes and renews a session after i
   expect((await (await request.get(`/api/events?project=${project.id}`)).json()).total).toBe(2)
   await context.close()
   await denied.close()
+})
+
+test('business identity follows login, account switch and logout, and appears in the dashboard', async ({ page, context, request }, testInfo) => {
+  await request.post('/api/auth/login', { data: { password: 'visora-e2e-password-only' } })
+  const { project } = await (await request.post('/api/projects', { data: { name: 'identity flow', origins: ['http://127.0.0.1:4318'] } })).json()
+  const website = await context.newPage()
+  await website.goto(`http://127.0.0.1:4318/?site=${project.siteId}`)
+  await expect.poll(async () => (await (await request.get(`/api/events?project=${project.id}`)).json()).total).toBe(1)
+  const identified = await website.evaluate(() => {
+    const tracker = (window as unknown as { visora: { identify: (user: unknown) => boolean } }).visora
+    const user = { id: 42, name: '张三', email: 'alice@example.com' }
+    const result = tracker.identify(user)
+    // The SDK must snapshot the supplied object, not retain a reference to mutable auth state.
+    user.name = 'unexpected mutation'
+    history.pushState({}, '', '/signed-in')
+    return result
+  })
+  expect(identified).toBe(true)
+  await website.evaluate(() => {
+    const tracker = (window as unknown as { visora: { identify: (user: unknown) => boolean; reset: () => void; track: (name: string) => void } }).visora
+    tracker.identify({ id: 'bob', name: '李四' })
+    history.pushState({}, '', '/switched-account')
+    tracker.reset()
+    history.pushState({}, '', '/logged-out')
+    tracker.identify({ id: 'bob' })
+    tracker.identify({ id: '' })
+    tracker.track('invalid_identity_cleared')
+  })
+  await expect.poll(async () => (await (await request.get(`/api/events?project=${project.id}`)).json()).total).toBe(5)
+  const rows = (await (await request.get(`/api/events?project=${project.id}`)).json()).events
+  expect(rows.find((row: { path: string }) => row.path === '/signed-in')).toMatchObject({ user_id: '42', user_name: '张三', user_email: 'alice@example.com', source: 'browser' })
+  expect(rows.find((row: { path: string }) => row.path === '/switched-account')).toMatchObject({ user_id: 'bob', user_name: '李四', user_email: null })
+  expect(rows.filter((row: { path: string }) => row.path === '/logged-out').every((row: { user_id: string | null }) => row.user_id === null)).toBe(true)
+  await website.evaluate(() => (window as unknown as { visora: { identify: (user: unknown) => void } }).visora.identify({ id: 'should-not-persist', name: 'Private Name' }))
+  expect(await website.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }))).not.toContain('should-not-persist')
+  await website.goto(`http://127.0.0.1:4318/?site=${project.siteId}`)
+  await expect.poll(async () => (await (await request.get(`/api/events?project=${project.id}`)).json()).total).toBe(6)
+  const anonymous = (await (await request.get(`/api/events?project=${project.id}`)).json()).events
+  expect(anonymous[0].user_id).toBeNull()
+
+  // Applications can restore an existing login before the first automatic pageview.
+  await website.addInitScript(() => window.addEventListener('visora:ready', () => {
+    const tracker = (window as unknown as { visora: { identify: (user: unknown) => boolean } }).visora
+    tracker.identify({ id: 'restored-user', name: '会话已恢复' })
+  }))
+  await website.goto(`http://127.0.0.1:4318/restored?site=${project.siteId}`)
+  await expect.poll(async () => (await (await request.get(`/api/events?project=${project.id}`)).json()).total).toBe(7)
+  const restored = (await (await request.get(`/api/events?project=${project.id}`)).json()).events
+  expect(restored.find((row: { path: string }) => row.path === '/restored')).toMatchObject({ user_id: 'restored-user', user_name: '会话已恢复', source: 'browser' })
+
+  await page.goto('/sign-in')
+  await page.getByLabel('管理密码').fill('visora-e2e-password-only')
+  await page.getByRole('button', { name: '进入工作空间' }).click()
+  await page.getByRole('link', { name: '访问明细', exact: true }).click()
+  await page.getByLabel('用户 ID', { exact: true }).fill('42')
+  await page.getByRole('button', { name: '筛选用户', exact: true }).click()
+  await expect(page.getByRole('cell').filter({ hasText: 'alice@example.com' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '/signed-in', exact: true })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '/logged-out', exact: true })).toHaveCount(0)
+  const csv = await (await page.request.get(`/api/export?project=${project.id}&userId=42`)).text()
+  expect(csv).toContain('alice@example.com')
+  expect(csv).not.toContain('李四')
+  await page.setViewportSize({ width: 1440, height: 1080 })
+  await page.screenshot({ path: testInfo.outputPath('visora-user-events.png'), fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await website.close()
 })

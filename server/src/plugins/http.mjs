@@ -3,7 +3,13 @@ import rateLimit from '@fastify/rate-limit'
 import { z } from 'zod'
 import { AppError } from '../shared/errors.mjs'
 
-const errorStatus = { INVALID_INPUT: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404 }
+const errorStatus = {
+  INVALID_INPUT: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+}
 
 /** Install on the root instance so hooks apply to every registered module. */
 export async function configureHttp(app, config) {

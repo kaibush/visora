@@ -38,5 +38,5 @@ export function CodeBlock({
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const browserSnippet = (siteId: string) =>
-  `<script defer\n  src="${window.location.origin}/tracker.js"\n  data-site="${siteId}">\n</script>`
+export const browserSnippet = (siteId: string, waitForUser = false) =>
+  `<script defer\n  src="${window.location.origin}/tracker.js"\n  data-site="${siteId}"${waitForUser ? '\n  data-wait-for-user="true"' : ''}>\n</script>`

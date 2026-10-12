@@ -49,6 +49,7 @@ import {
   type Project,
 } from './api'
 import { browserSnippet, CodeBlock } from './code-block'
+import { ProjectKeyDialog } from './project-key-dialog'
 import { EmptyState, ErrorState, VisoraPage } from './shared'
 
 function ProjectEditor({
@@ -163,7 +164,7 @@ export function VisoraProjects() {
   const [editor, setEditor] = useState<Project | 'new' | null>(null)
   const [credentials, setCredentials] = useState<{
     project: Project
-    key: string
+    key?: string
   } | null>(null)
   const [install, setInstall] = useState<Project | null>(null)
   const [rotate, setRotate] = useState<Project | null>(null)
@@ -337,6 +338,14 @@ export function VisoraProjects() {
                 接入代码
               </Button>
               <Button
+                variant='outline'
+                className='flex-1'
+                onClick={() => setCredentials({ project })}
+              >
+                <KeyRound className='size-4' />
+                查看密钥
+              </Button>
+              <Button
                 variant='ghost'
                 size='icon'
                 aria-label={`编辑 ${project.name}`}
@@ -373,35 +382,18 @@ export function VisoraProjects() {
           created={setCredentials}
         />
       )}
-      <Dialog
-        open={!!credentials}
-        onOpenChange={(open) => {
-          if (!open) setCredentials(null)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              保存 {credentials?.project.name} 的服务端密钥
-            </DialogTitle>
-            <DialogDescription>
-              密钥只在此处展示一次，请保存到服务端环境变量。关闭后无法重新查看，可通过轮换生成新密钥。
-            </DialogDescription>
-          </DialogHeader>
-          {credentials && (
-            <CodeBlock
-              label='VISORA_SERVER_KEY · 仅服务端使用'
-              code={credentials.key}
-            />
-          )}
-          <p className='text-xs text-muted-foreground'>
-            网页脚本不需要此密钥。请勿将密钥放入前端源码。
-          </p>
-          <DialogFooter>
-            <Button onClick={() => setCredentials(null)}>我已保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {credentials && (
+        <ProjectKeyDialog
+          key={credentials.project.id}
+          project={credentials.project}
+          initialKey={credentials.key}
+          close={() => setCredentials(null)}
+          rotate={() => {
+            setRotate(credentials.project)
+            setCredentials(null)
+          }}
+        />
+      )}
       <Dialog
         open={!!install}
         onOpenChange={(open) => {
@@ -412,8 +404,8 @@ export function VisoraProjects() {
           <DialogHeader>
             <DialogTitle>接入 {install?.name}</DialogTitle>
             <DialogDescription>
-              将脚本添加到页面的 &lt;head&gt; 中，自动记录页面访问和 SPA
-              路由切换。
+              将脚本添加到页面的 &lt;head&gt;
+              中即可记录匿名访问；需要登录用户详情时，按快速接入指南同步用户状态。
             </DialogDescription>
           </DialogHeader>
           {install && (
@@ -431,7 +423,7 @@ export function VisoraProjects() {
               </p>
               <Button asChild variant='outline'>
                 <Link to='/integrations'>
-                  查看服务端与自定义事件接入
+                  查看快速接入与用户同步
                   <ArrowUpRight className='size-4' />
                 </Link>
               </Button>

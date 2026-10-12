@@ -16,7 +16,7 @@ import { projectsQuery } from './api'
 
 const date = (offset = 0) =>
   new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10)
-type Filter = { project: string; from: string; to: string }
+type Filter = { project: string; from: string; to: string; userId: string }
 const FilterContext = createContext<{
   filter: Filter
   setFilter: (filter: Filter) => void
@@ -25,6 +25,7 @@ const FilterContext = createContext<{
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [filter, setFilter] = useState<Filter>({
     project: 'all',
+    userId: '',
     from: date(-6),
     to: date(),
   })
@@ -54,6 +55,7 @@ export function AnalyticsFilters({
           .find((days) => filter.from === date(1 - days))
           ?.toString() ?? 'custom')
       : 'custom'
+  const [draftUser, setDraftUser] = useState(filter.userId)
   const [exporting, setExporting] = useState(false)
   const [draft, setDraft] = useState({ from: filter.from, to: filter.to })
 
@@ -158,6 +160,38 @@ export function AnalyticsFilters({
           </Button>
         </form>
       )}
+      <form
+        className='flex w-full flex-wrap items-center gap-2 sm:w-auto'
+        onSubmit={(event) => {
+          event.preventDefault()
+          setFilter({ ...filter, userId: draftUser.trim() })
+        }}
+      >
+        <Input
+          aria-label='用户 ID'
+          placeholder='按用户 ID 精确筛选'
+          className='w-44'
+          maxLength={128}
+          value={draftUser}
+          onChange={(event) => setDraftUser(event.target.value)}
+        />
+        <Button type='submit' variant='secondary' size='sm'>
+          筛选用户
+        </Button>
+        {filter.userId && (
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            onClick={() => {
+              setDraftUser('')
+              setFilter({ ...filter, userId: '' })
+            }}
+          >
+            清除用户筛选
+          </Button>
+        )}
+      </form>
       <span className='hidden text-xs text-muted-foreground xl:inline'>
         {filter.from} — {filter.to} · UTC
       </span>

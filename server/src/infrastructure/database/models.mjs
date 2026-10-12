@@ -39,6 +39,7 @@ export function defineModels(sequelize) {
       origins: { type: DataTypes.TEXT, allowNull: false },
       enabled: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
       keyHash: text(64, { field: 'key_hash', unique: true }),
+      keyCiphertext: { type: DataTypes.TEXT, allowNull: true, field: 'key_ciphertext' },
       keyPrefix: text(20, { field: 'key_prefix' }),
       createdAt: integer({ field: 'created_at' }),
     },
@@ -66,6 +67,9 @@ export function defineModels(sequelize) {
       day: text(10),
       visitor: text(64),
       session: text(64),
+      userId: { type: DataTypes.STRING(128), allowNull: true, field: 'user_id' },
+      userName: { type: DataTypes.STRING(120), allowNull: true, field: 'user_name' },
+      userEmail: { type: DataTypes.STRING(254), allowNull: true, field: 'user_email' },
       path: text(512),
       referrer: text(255),
       browser: text(32),
@@ -78,6 +82,7 @@ export function defineModels(sequelize) {
       { name: 'events_project_event_unique', unique: true, fields: ['project_id', 'event_id'] },
       { name: 'events_project_time', fields: ['project_id', 'occurred_at'] },
       { name: 'events_time', fields: ['occurred_at'] },
+      { name: 'events_project_user_time', fields: ['project_id', 'user_id', 'occurred_at'] },
     ])
   )
   Event.belongsTo(Project, { foreignKey: 'projectId', as: 'project' })

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import browserUserSource from '../../../../sdk/browser.mjs?raw'
 import { projectsQuery } from './api'
 import { browserSnippet, CodeBlock } from './code-block'
 import { EmptyState, ErrorState, VisoraPage } from './shared'
@@ -30,7 +31,7 @@ export function VisoraIntegrations() {
   return (
     <VisoraPage
       title='接入指南'
-      description='几分钟完成接入，让不同技术栈共享同一套统计能力。'
+      description='推荐只改前端：安装脚本、同步用户，即可自动查看每次访问的详情。'
     >
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {data && !data.projects.length && (
@@ -91,12 +92,78 @@ export function VisoraIntegrations() {
             </Select>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue='browser'>
-              <TabsList className='mb-6'>
+            <Tabs defaultValue='quickstart'>
+              <TabsList className='mb-6 flex h-auto flex-wrap'>
+                <TabsTrigger value='quickstart'>快速接入（推荐）</TabsTrigger>
                 <TabsTrigger value='browser'>浏览器脚本</TabsTrigger>
                 <TabsTrigger value='server'>服务端 API</TabsTrigger>
                 <TabsTrigger value='custom'>自定义事件</TabsTrigger>
+                <TabsTrigger value='users'>登录用户</TabsTrigger>
               </TabsList>
+              <TabsContent value='quickstart' className='space-y-5'>
+                <p className='text-sm leading-7 text-muted-foreground'>
+                  new-api、grok-iq
+                  及其他网站都按同一种方式接入。只需在前端安装一次脚本，
+                  再从现有登录状态传入用户；页面访问与 SPA
+                  路由变化自动记录，无需修改业务后端或数据库。
+                </p>
+                <p className='text-sm font-medium'>
+                  1. 在项目管理中添加目标网站的来源，再把脚本放入 HTML 的
+                  &lt;head&gt;
+                </p>
+                <CodeBlock
+                  label='HTML · 等待用户状态就绪，自动采集首屏与路由'
+                  code={browserSnippet(project.siteId, true)}
+                />
+                <p className='rounded-md bg-muted/50 p-3 text-xs leading-6 text-muted-foreground'>
+                  当前允许来源：
+                  {project.origins.join('、') ||
+                    '尚未配置，请先在项目管理中添加'}
+                  。
+                  来源必须包含协议、域名与端口；脚本地址必须能被访客浏览器访问。
+                </p>
+                <p className='text-sm font-medium'>
+                  2. 复制用户同步模块，在统一更新登录状态的位置调用
+                </p>
+                <CodeBlock
+                  label='JavaScript · 保存为 src/lib/visora.js'
+                  code={browserUserSource}
+                />
+                <CodeBlock
+                  label='JavaScript · 登录状态恢复 / 登录 / 切换账号 / 退出时调用'
+                  code={`import { syncVisoraUser } from './lib/visora'
+
+// 放在现有的用户状态更新逻辑中，在路由跳转之前执行。
+// currentUser 来自自己的登录接口，字段名按业务系统调整。
+// 等登录状态恢复完成后再调用；确认未登录或退出时传 null。
+syncVisoraUser(currentUser ? {
+  id: currentUser.id,
+  name: currentUser.name ?? currentUser.username,
+  email: currentUser.email,
+} : null)`}
+                />
+                <p className='text-xs leading-6 text-muted-foreground'>
+                  同步模块兼容脚本先加载、用户先加载，未加载脚本时只保留最新的用户状态。
+                  第一次传入有效用户或 null
+                  后，自动记录当前页面并继续监听路由；不需要手动调用 pageview。
+                  如果一直不传入状态，就不会采集。刷新页面后需要重新同步；重复同步不会增加
+                  PV。 TypeScript 项目可同时把 sdk/browser.d.ts 复制为
+                  src/lib/visora.d.ts。
+                </p>
+                <p className='text-sm font-medium'>
+                  3. 打开目标网站，再到「访问明细」按项目或用户 ID 查看
+                </p>
+                <p className='text-sm leading-7 text-muted-foreground'>
+                  可看到访问时间、页面路径、来源站点、设备、浏览器、操作系统、语言，以及已传入的用户
+                  ID、名称和邮箱， 并按项目、日期、用户 ID
+                  筛选和导出。未登录访客显示为匿名。
+                </p>
+                <p className='text-xs leading-6 text-muted-foreground'>
+                  纯匿名网站可以使用「浏览器脚本」页签的一段脚本直接采集。 Hash
+                  路由添加 data-hash="true"。浏览器身份来自业务前端声明；用户 ID
+                  必填，名称和邮箱可选。
+                </p>
+              </TabsContent>
               <TabsContent value='browser' className='space-y-5'>
                 <p className='text-sm leading-7 text-muted-foreground'>
                   在目标网站的 HTML
@@ -126,7 +193,7 @@ export function VisoraIntegrations() {
               </TabsContent>
               <TabsContent value='server' className='space-y-5'>
                 <p className='text-sm leading-7 text-muted-foreground'>
-                  使用创建项目时保存的服务端密钥，放入服务端环境变量
+                  在「项目管理 → 查看密钥」复制服务端密钥，放入服务端环境变量
                   VISORA_SERVER_KEY。一次最多上报 100
                   个事件，适合已有统计逻辑转发或定时批量导入。
                 </p>
@@ -146,6 +213,71 @@ export function VisoraIntegrations() {
                   事件计入自定义事件。接口返回 accepted 与 duplicates。
                 </p>
               </TabsContent>
+              <TabsContent value='users' className='space-y-5'>
+                <p className='text-sm leading-7 text-muted-foreground'>
+                  Visora
+                  不会自动读取其他系统的登录状态。请在脚本就绪且业务登录状态恢复后传入用户信息，访问明细即可显示用户
+                  ID、名称和邮箱。
+                </p>
+                <CodeBlock
+                  label='JavaScript · 登录 / 恢复会话 / 切换账号后'
+                  code={`// currentUser 由你的业务系统登录接口提供
+function syncVisoraUser(currentUser) {
+  if (currentUser) {
+    window.visora?.identify({
+      id: String(currentUser.id),
+      name: currentUser.name,
+      email: currentUser.email,
+    })
+  } else {
+    window.visora?.reset()
+  }
+}
+
+// 状态恢复后调用；若脚本晚于应用加载，也监听就绪事件
+syncVisoraUser(currentUser)
+window.addEventListener('visora:ready', () => syncVisoraUser(currentUser))
+
+// 每次登录 / 切换账号后再次调用 syncVisoraUser
+// 退出登录时（在后续路由或事件之前）
+window.visora?.reset()`}
+                />
+                <CodeBlock
+                  label='JSON · 服务端事件可携带相同的 user 字段'
+                  code={JSON.stringify(
+                    {
+                      events: [
+                        {
+                          eventId: 'visit-1001',
+                          visitorId: 'visitor-42',
+                          sessionId: 'session-1',
+                          path: '/dashboard',
+                          user: {
+                            id: '42',
+                            name: '演示用户',
+                            email: 'demo@example.com',
+                          },
+                        },
+                      ],
+                    },
+                    null,
+                    2
+                  )}
+                />
+                <p className='text-xs leading-6 text-muted-foreground'>
+                  user.id 必填，name 和 email 可选。identify
+                  只影响后续事件，不补写历史记录，也不增加 PV。
+                  身份只保留在当前页面内存，刷新后需由业务系统重新传入。首屏也需关联用户时，
+                  使用「快速接入」的 data-wait-for-user="true"，第一次传入用户或
+                  null 后自动开始采集。
+                </p>
+                <p className='text-xs leading-6 text-muted-foreground'>
+                  浏览器身份属于客户端声明；需要可信归属的记录，应由业务后端读取已验证的登录上下文后使用项目密钥上报。
+                  不同项目相同的用户 ID
+                  不会合并。只发送需要展示的用户字段，不传密码、Cookie
+                  或登录令牌。
+                </p>
+              </TabsContent>
               <TabsContent value='custom' className='space-y-5'>
                 <p className='text-sm leading-7 text-muted-foreground'>
                   安装网页脚本后，在业务成功时上报事件。可选链确保脚本未加载或用户拒绝追踪时，业务正常运行。
@@ -157,7 +289,9 @@ export function VisoraIntegrations() {
                 <p className='text-xs leading-6 text-muted-foreground'>
                   需要事先征得统计同意的网站，应在用户同意后才加载脚本。默认尊重
                   Do Not Track 和 Global Privacy Control，不采集
-                  IP、查询参数、URL fragment 或完整来源地址。
+                  IP、查询参数、URL fragment
+                  或完整来源地址。用户信息仅在主动调用 identify 或通过服务端提供
+                  user 时记录。
                 </p>
               </TabsContent>
             </Tabs>
@@ -168,7 +302,7 @@ export function VisoraIntegrations() {
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-base'>
             <ShieldCheck className='size-5 text-primary' />
-            统计口径与现有项目迁移
+            统计口径与接入说明
           </CardTitle>
         </CardHeader>
         <CardContent className='grid gap-6 text-sm leading-7 md:grid-cols-2'>
@@ -182,12 +316,12 @@ export function VisoraIntegrations() {
             </p>
           </div>
           <div>
-            <h3 className='mb-2 font-medium'>接入 new-api / grok-iq</h3>
+            <h3 className='mb-2 font-medium'>所有网站使用同一套接入方式</h3>
             <p className='text-muted-foreground'>
-              可直接安装网页脚本，也可在已有访问记录写入后异步转发到服务端
-              API。同一事件选择一种采集路径；导入历史数据时映射
-              visitor、session、page、created_at 等字段，并使用稳定的 eventId
-              去重。
+              在 HTML
+              入口加载脚本，在统一用户状态更新处同步身份，便能自动记录页面访问。
+              业务系统无需实现统计接口或维护统计表；同一次访问使用一条 Visora
+              采集路径，避免重复计数。
             </p>
           </div>
           <div>

@@ -57,6 +57,7 @@ function EventTable({ query }: { query: string }) {
                     <TableRow>
                       <TableHead>时间（UTC）</TableHead>
                       <TableHead>项目</TableHead>
+                      <TableHead>业务用户</TableHead>
                       <TableHead>事件</TableHead>
                       <TableHead>页面</TableHead>
                       <TableHead>来源</TableHead>
@@ -75,6 +76,41 @@ function EventTable({ query }: { query: string }) {
                           title={event.project_name}
                         >
                           {event.project_name}
+                        </TableCell>
+                        <TableCell className='max-w-60'>
+                          {event.user_id !== null ? (
+                            <div className='space-y-1 text-xs'>
+                              <p
+                                className='truncate font-medium'
+                                title={event.user_name || event.user_id}
+                              >
+                                {event.user_name || event.user_id}
+                              </p>
+                              <p
+                                className='truncate font-mono text-muted-foreground'
+                                title={event.user_id}
+                              >
+                                ID: {event.user_id}
+                              </p>
+                              {event.user_email && (
+                                <p
+                                  className='truncate text-muted-foreground'
+                                  title={event.user_email}
+                                >
+                                  {event.user_email}
+                                </p>
+                              )}
+                              <span className='text-[10px] text-muted-foreground'>
+                                {event.source === 'browser'
+                                  ? '浏览器声明'
+                                  : '服务端上报'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className='text-xs text-muted-foreground'>
+                              匿名访客
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -103,7 +139,12 @@ function EventTable({ query }: { query: string }) {
                           {event.referrer || '直接访问'}
                         </TableCell>
                         <TableCell className='text-xs whitespace-nowrap text-muted-foreground'>
-                          {event.browser} · {event.device}
+                          <p>
+                            {event.browser} · {event.device}
+                          </p>
+                          <p className='mt-1'>
+                            {event.os} · {event.language || '语言未知'}
+                          </p>
                         </TableCell>
                         <TableCell className='text-xs'>
                           {event.source === 'browser' ? '浏览器' : '服务端'}
@@ -154,7 +195,7 @@ export function VisoraEvents() {
   return (
     <VisoraPage
       title='访问明细'
-      description='从汇总数字走向每一次访问，查看最近收到的页面浏览和自定义事件。'
+      description='查看页面访问、业务事件及接入系统主动上报的用户信息。未上报身份的记录显示为匿名访客。'
     >
       <EventTable key={query} query={query} />
     </VisoraPage>

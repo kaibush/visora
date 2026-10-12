@@ -1,6 +1,7 @@
 import Fastify, { LogController } from 'fastify'
 import { loadConfig } from './config.mjs'
 import { openDatabase } from './infrastructure/database/connection.mjs'
+import { createKeyVault } from './infrastructure/crypto/key-vault.mjs'
 import { configureHttp } from './plugins/http.mjs'
 import { registerWeb } from './plugins/web.mjs'
 import { createSessionRepository } from './modules/auth/repository.mjs'
@@ -22,6 +23,7 @@ import { createRetentionJob } from './jobs/retention.mjs'
 export async function buildApp(options = {}) {
   const config = options.config ?? loadConfig(options)
   const clock = options.now ?? Date.now
+  const keyVault = await createKeyVault(config)
   const db = await openDatabase(config)
   const salt = db.identitySalt
   const app = Fastify({
@@ -38,7 +40,11 @@ export async function buildApp(options = {}) {
   const sessions = createSessionRepository(db)
   const events = createEventRepository(db)
   const auth = createAuthService({ repository: sessions, password: config.password, salt, clock })
-  const projects = createProjectService({ repository: createProjectRepository(db), clock })
+  const projects = createProjectService({
+    repository: createProjectRepository(db),
+    clock,
+    keyVault,
+  })
   const ingestion = createIngestionService({
     repository: events,
     projects,

@@ -55,8 +55,8 @@ export function createProjectRepository({ models }) {
         { where: { id: project.id } }
       )
     },
-    rotateKey(id, keyHash, keyPrefix) {
-      return Project.update({ keyHash, keyPrefix }, { where: { id } })
+    rotateKey(id, keyHash, keyPrefix, keyCiphertext) {
+      return Project.update({ keyHash, keyPrefix, keyCiphertext }, { where: { id } })
     },
   }
 }

@@ -15,6 +15,7 @@ export function parseFilter(query, now) {
   const input = z
     .object({
       project: z.string().max(80).default('all'),
+      userId: z.string().trim().max(128).default(''),
       from: dateString.default(new Date(now - 6 * day).toISOString().slice(0, 10)),
       to: dateString.default(today),
       page: z.coerce.number().int().min(1).max(100000).default(1),

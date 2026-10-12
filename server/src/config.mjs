@@ -29,6 +29,11 @@ const databaseSchema = z.object({
 })
 const environmentSchema = z.object({
   VISORA_ADMIN_PASSWORD: z.string().min(12, 'Visora: 管理密码至少需要 12 位'),
+  VISORA_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^$|^[a-fA-F0-9]{64}$/, 'Visora: 加密主密钥需为 64 位十六进制字符串')
+    .default(''),
+  VISORA_ENCRYPTION_KEY_FILE: z.string().min(1).default('./data/encryption.key'),
   VISORA_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
   VISORA_TRUST_PROXY: z.enum(['true', 'false']).default('false'),
   VISORA_SECURE_COOKIE: z.enum(['true', 'false']).default('false'),
@@ -81,6 +86,12 @@ export function loadConfig(overrides = {}, environment = process.env) {
   const env = environmentSchema.parse({
     ...environment,
     ...(overrides.password !== undefined ? { VISORA_ADMIN_PASSWORD: overrides.password } : {}),
+    ...(overrides.encryptionKey !== undefined
+      ? { VISORA_ENCRYPTION_KEY: overrides.encryptionKey }
+      : {}),
+    ...(overrides.encryptionKeyFile !== undefined
+      ? { VISORA_ENCRYPTION_KEY_FILE: overrides.encryptionKeyFile }
+      : {}),
     ...(overrides.retentionDays !== undefined
       ? { VISORA_RETENTION_DAYS: overrides.retentionDays }
       : {}),
@@ -95,6 +106,8 @@ export function loadConfig(overrides = {}, environment = process.env) {
     name: 'Visora',
     version: '0.1.0',
     password: env.VISORA_ADMIN_PASSWORD,
+    encryptionKey: env.VISORA_ENCRYPTION_KEY,
+    encryptionKeyFile: env.VISORA_ENCRYPTION_KEY_FILE,
     ...loadDatabaseConfig(overrides, environment),
     retentionDays: env.VISORA_RETENTION_DAYS,
     trustProxy: env.VISORA_TRUST_PROXY === 'true',

@@ -17,7 +17,7 @@ function presentProject(project) {
   }
 }
 
-export function createProjectService({ repository, clock }) {
+export function createProjectService({ repository, clock, keyVault }) {
   async function get(id) {
     const project = await repository.get(id)
     if (!project) throw new AppError('NOT_FOUND', '项目不存在')
@@ -31,11 +31,13 @@ export function createProjectService({ repository, clock }) {
     async create(input) {
       const data = projectSchema.parse(input)
       const key = `vs_${randomBytes(32).toString('base64url')}`
+      const id = randomUUID()
       const project = {
         ...data,
-        id: randomUUID(),
+        id,
         siteId: `v_${randomBytes(12).toString('hex')}`,
         keyHash: hashToken(key),
+        keyCiphertext: keyVault.encrypt(key, id),
         keyPrefix: key.slice(0, 11),
         createdAt: clock(),
       }
@@ -48,10 +50,21 @@ export function createProjectService({ repository, clock }) {
       await repository.update(project)
       return presentProject(project)
     },
+    async revealKey(id) {
+      const project = await get(id)
+      if (!project.keyCiphertext) return null
+      try {
+        const key = keyVault.decrypt(project.keyCiphertext, id)
+        if (hashToken(key) !== project.keyHash) throw new Error('Stored key mismatch')
+        return key
+      } catch {
+        throw new AppError('CONFLICT', '密钥无法解密，请恢复原加密配置或轮换密钥')
+      }
+    },
     async rotateKey(id) {
       await get(id)
       const key = `vs_${randomBytes(32).toString('base64url')}`
-      await repository.rotateKey(id, hashToken(key), key.slice(0, 11))
+      await repository.rotateKey(id, hashToken(key), key.slice(0, 11), keyVault.encrypt(key, id))
       return key
     },
     async authorizeBrowser(siteId, origin) {

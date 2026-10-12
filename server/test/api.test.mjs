@@ -26,6 +26,7 @@ async function buildTestApp(options = {}) {
     {
       password,
       database: ':memory:',
+      encryptionKey: 'a'.repeat(64),
       databaseUrl: '',
       autoMigrate: true,
       serveFrontend: false,
@@ -166,6 +167,8 @@ test('collector allows exact origins only and strips private URL data; keys are 
   const listed = await admin('GET', '/api/projects')
   assert.ok(!listed.body.includes(key))
   assert.ok(!listed.body.includes('key_hash'))
+  assert.ok(!listed.body.includes('keyCiphertext'))
+  assert.ok(!listed.body.includes('key_ciphertext'))
   assert.equal(listed.json().projects[0].totalEvents, 1)
   const rows = (await admin('GET', '/api/events')).json().events
   assert.equal(rows[0].visitor, undefined)
@@ -316,6 +319,18 @@ test('SQLite survives restarts, schema initialization is idempotent, password ch
       401
     )
     assert.equal(await second.db.models.Migration.max('version'), latestVersion)
+    const login = await second.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { password: password + '-changed' },
+    })
+    const nextCookie = `visora_session=${login.cookies[0].value}`
+    const revealed = await second.inject({
+      url: `/api/projects/${project.project.id}/key`,
+      headers: { cookie: nextCookie },
+    })
+    assert.equal(revealed.statusCode, 200)
+    assert.equal(revealed.json().key, project.key)
   } finally {
     await second.close()
   }
@@ -456,4 +471,161 @@ test('concurrent ingestion retries have exact counts and event IDs remain case-s
     10
   )
   assert.equal(await app.db.models.Event.count(), 2)
+})
+
+test('project keys can be revealed repeatedly only by an administrator and rotated atomically', async (t) => {
+  const { app, admin, create, send } = await fixture(t)
+  const { project, key } = await create()
+  const url = `/api/projects/${project.id}/key`
+  assert.equal((await app.inject(url)).statusCode, 401)
+  assert.equal(
+    (await app.inject({ url, headers: { authorization: `Bearer ${key}` } })).statusCode,
+    401
+  )
+  for (let i = 0; i < 2; i++) {
+    const revealed = await admin('GET', url)
+    assert.equal(revealed.statusCode, 200, revealed.body)
+    assert.equal(revealed.headers['cache-control'], 'no-store')
+    assert.equal(revealed.json().key, key)
+  }
+  const stored = await app.db.models.Project.findByPk(project.id, { raw: true })
+  assert.ok(stored.keyCiphertext.startsWith('v1.'))
+  assert.ok(!JSON.stringify(stored).includes(key))
+  const rotated = await admin('POST', `/api/projects/${project.id}/rotate-key`)
+  assert.equal(rotated.statusCode, 200, rotated.body)
+  assert.notEqual(rotated.json().key, key)
+  assert.equal((await admin('GET', url)).json().key, rotated.json().key)
+  assert.equal((await send(key, [event('old-key')])).statusCode, 401)
+  assert.equal((await send(rotated.json().key, [event('new-key')])).statusCode, 202)
+  assert.equal((await admin('GET', '/api/projects/missing/key')).statusCode, 404)
+})
+
+test('legacy keys stay valid without ciphertext; explicit rotation enables retrieval', async (t) => {
+  const { app, admin, create, send } = await fixture(t)
+  const { project, key } = await create()
+  await app.db.models.Project.update({ keyCiphertext: null }, { where: { id: project.id } })
+  const response = await admin('GET', `/api/projects/${project.id}/key`)
+  assert.equal(response.statusCode, 200, response.body)
+  assert.deepEqual(response.json(), { key: null })
+  assert.equal((await send(key, [event('legacy-still-valid')])).statusCode, 202)
+  const rotated = (await admin('POST', `/api/projects/${project.id}/rotate-key`)).json()
+  assert.equal((await admin('GET', `/api/projects/${project.id}/key`)).json().key, rotated.key)
+})
+
+test('encrypted keys cannot be substituted between projects', async (t) => {
+  const { app, admin, create } = await fixture(t)
+  const a = await create('A')
+  const b = await create('B')
+  const stored = await app.db.models.Project.findByPk(a.project.id, { raw: true })
+  await app.db.models.Project.update(
+    { keyCiphertext: stored.keyCiphertext },
+    { where: { id: b.project.id } }
+  )
+  const response = await admin('GET', `/api/projects/${b.project.id}/key`)
+  assert.equal(response.statusCode, 409)
+  assert.ok(!response.body.includes(a.key))
+  assert.ok(!response.body.includes(stored.keyCiphertext))
+})
+
+test('business user snapshots support filtering and CSV without changing visitor identity', async (t) => {
+  const { app, admin, create, send } = await fixture(t)
+  const a = await create('user project A')
+  const b = await create('user project B')
+  const response = await send(a.key, [
+    event('anonymous'),
+    event('alice', {
+      user: { id: 42, name: '张三', email: 'alice@example.com', password: 'discard-me' },
+    }),
+    event('signup', { type: 'event', name: 'signup', user: { id: '42', name: '张三' } }),
+    event('bob', { user: { id: 'bob', name: '=HYPERLINK("example")' } }),
+  ])
+  assert.equal(response.statusCode, 202, response.body)
+  await send(b.key, [event('other-system', { user: { id: '42', name: '另一个系统用户' } })])
+  const all = (await admin('GET', `/api/events?project=${a.project.id}`)).json()
+  assert.equal(all.total, 4)
+  const alice = all.events.find((row) => row.event_id === 'alice')
+  assert.equal(alice.user_id, '42')
+  assert.equal(alice.user_name, '张三')
+  assert.equal(alice.user_email, 'alice@example.com')
+  const anonymous = all.events.find((row) => row.event_id === 'anonymous')
+  assert.equal(anonymous.user_id, null)
+  assert.equal(anonymous.user_name, null)
+  assert.equal(anonymous.user_email, null)
+  const filter = `project=${a.project.id}&userId=42`
+  const rows = (await admin('GET', `/api/events?${filter}`)).json()
+  assert.equal(rows.total, 2)
+  assert.ok(rows.events.every((row) => row.project_id === a.project.id && row.user_id === '42'))
+  const report = (await admin('GET', `/api/analytics?${filter}`)).json()
+  assert.deepEqual(report.totals, { pv: 1, uv: 1, sessions: 1, events: 1 })
+  assert.equal(
+    report.trend.reduce((sum, row) => sum + row.pv, 0),
+    1
+  )
+  assert.equal(report.projects[0].events, 2)
+  assert.equal((await admin('GET', `/api/analytics?project=${a.project.id}`)).json().totals.uv, 1)
+  const csv = await admin('GET', `/api/export?${filter}`)
+  assert.ok(csv.body.includes('user_id,user_name,user_email'))
+  assert.ok(csv.body.includes('alice@example.com'))
+  assert.ok(!csv.body.includes('另一个系统用户'))
+  assert.ok(!csv.body.includes('HYPERLINK'))
+  const bobCsv = await admin('GET', `/api/export?project=${a.project.id}&userId=bob`)
+  assert.ok(bobCsv.body.includes("'=HYPERLINK"))
+  assert.equal((await admin('GET', '/api/events?userId=unknown-user')).json().total, 0)
+  const stored = await app.db.models.Event.findAll({ raw: true })
+  assert.ok(!JSON.stringify(stored).includes('discard-me'))
+  // A retried anonymous event must not be rewritten with a later login's identity.
+  await send(a.key, [event('anonymous', { user: { id: '42' } })])
+  const original = await app.db.models.Event.findOne({
+    where: { projectId: a.project.id, eventId: 'anonymous' },
+    raw: true,
+  })
+  assert.equal(original.userId, null)
+})
+
+test('invalid business identity rejects the complete batch and user ID zero is supported', async (t) => {
+  const { app, create, send } = await fixture(t)
+  const { key } = await create()
+  for (const user of [
+    {},
+    { id: '' },
+    { id: '   ' },
+    { id: 'a'.repeat(129) },
+    { id: 'a\u0000b' },
+    { id: {} },
+    { id: Number.MAX_SAFE_INTEGER + 1 },
+    { id: 'a', name: 'b'.repeat(121) },
+    { id: 'a', email: 'not-an-email' },
+  ]) {
+    const response = await send(key, [event('valid'), event('invalid', { user })])
+    assert.equal(response.statusCode, 400, response.body)
+    assert.equal(await app.db.models.Event.count(), 0)
+  }
+  const response = await send(key, [
+    event('zero', { user: { id: 0, name: '   ', email: '   ' } }),
+    event('no-user', { user: null }),
+  ])
+  assert.equal(response.statusCode, 202, response.body)
+  const zero = await app.db.models.Event.findOne({ where: { eventId: 'zero' }, raw: true })
+  assert.equal(zero.userId, '0')
+  assert.equal(zero.userName, null)
+  assert.equal(zero.userEmail, null)
+})
+
+test('browser identity is an optional client declaration, distinguished from server ingestion', async (t) => {
+  const { app, admin, create } = await fixture(t)
+  const { project } = await create()
+  const response = await app.inject({
+    method: 'POST',
+    url: `/api/collect/${project.siteId}`,
+    headers: { origin: 'https://app.example.com' },
+    payload: event('browser-user', {
+      user: { id: 'browser-user', name: 'Browser User', email: 'browser@example.com' },
+      source: 'server',
+    }),
+  })
+  assert.equal(response.statusCode, 202, response.body)
+  const rows = (await admin('GET', `/api/events?project=${project.id}&userId=browser-user`)).json()
+  assert.equal(rows.total, 1)
+  assert.equal(rows.events[0].source, 'browser')
+  assert.equal(rows.events[0].user_name, 'Browser User')
 })

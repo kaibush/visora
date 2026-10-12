@@ -4,6 +4,7 @@ function eventFilter(filter, type) {
   return {
     occurredAt: { [Op.gte]: filter.start, [Op.lt]: filter.end },
     ...(filter.project === 'all' ? {} : { projectId: filter.project }),
+    ...(filter.userId ? { userId: filter.userId } : {}),
     ...(type ? { type } : {}),
   }
 }
@@ -130,6 +131,9 @@ export function createAnalyticsRepository({ models }) {
           'id',
           'eventId',
           'projectId',
+          'userId',
+          'userName',
+          'userEmail',
           'type',
           'name',
           'occurredAt',
@@ -156,6 +160,9 @@ export function createAnalyticsRepository({ models }) {
         event_id: row.eventId,
         project_id: row.projectId,
         project_name: row['project.name'],
+        user_id: row.userId ?? null,
+        user_name: row.userName ?? null,
+        user_email: row.userEmail ?? null,
         type: row.type,
         name: row.name,
         occurred_at: Number(row.occurredAt),
