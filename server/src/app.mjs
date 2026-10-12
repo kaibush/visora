@@ -39,7 +39,7 @@ export async function buildApp(options = {}) {
   app.decorate('db', db)
   const sessions = createSessionRepository(db)
   const events = createEventRepository(db)
-  const auth = createAuthService({ repository: sessions, password: config.password, salt, clock })
+  const auth = createAuthService({ repository: sessions, clock })
   const projects = createProjectService({
     repository: createProjectRepository(db),
     clock,

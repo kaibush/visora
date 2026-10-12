@@ -5,7 +5,7 @@ import { loadConfig, loadDatabaseConfig } from '../src/config.mjs'
 // Configuration tests never create connections or import a database driver.
 test('an explicit SQLite override cannot inherit remote database credentials', () => {
   const config = loadConfig(
-    { password: 'isolated-test-password', database: ':memory:', autoMigrate: true },
+    { database: ':memory:', autoMigrate: true },
     {
       VISORA_DATABASE_URL: 'postgres://someone:secret@other-service.invalid/production',
       VISORA_DB_SSL: 'true',

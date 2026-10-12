@@ -209,6 +209,9 @@ export function VisoraOverview() {
                 <CardTitle className='text-base'>访问趋势</CardTitle>
                 <CardDescription>
                   观察流量变化，了解项目的每一天。
+                  <Link to='/trends' className='ml-2 text-primary'>
+                    打开柱状图并下钻
+                  </Link>
                 </CardDescription>
               </div>
               <div className='flex gap-5 text-xs text-muted-foreground'>

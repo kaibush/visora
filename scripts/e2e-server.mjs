@@ -5,7 +5,6 @@ import { loadConfig } from '../server/src/config.mjs'
 
 const config = loadConfig(
   {
-    password: 'visora-e2e-password-only',
     database: ':memory:',
     encryptionKey: 'b'.repeat(64),
     databaseUrl: '',
@@ -14,6 +13,12 @@ const config = loadConfig(
   { VISORA_LOGIN_RATE_LIMIT: '50' } // Shared test server runs multiple independent login scenarios.
 )
 const app = await buildApp({ config, logger: false })
+const setup = await app.inject({
+  method: 'POST',
+  url: '/api/auth/setup',
+  payload: { username: 'admin', password: 'visora-e2e-password-only' },
+})
+if (setup.statusCode !== 200) throw new Error(setup.body)
 await app.listen({ port: 4317, host: '127.0.0.1' })
 const userModule = await readFile(new URL('../sdk/browser.mjs', import.meta.url), 'utf8')
 const website = createServer((request, response) => {

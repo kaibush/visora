@@ -45,6 +45,17 @@ export function defineModels(sequelize) {
     },
     options('projects')
   )
+  const Admin = sequelize.define(
+    'Admin',
+    {
+      id: { type: DataTypes.INTEGER, primaryKey: true },
+      username: text(64, { unique: true }),
+      passwordHash: text(64, { field: 'password_hash' }),
+      passwordSalt: text(64, { field: 'password_salt' }),
+      createdAt: integer({ field: 'created_at' }),
+    },
+    options('admins')
+  )
   const Session = sequelize.define(
     'Session',
     {
@@ -90,5 +101,5 @@ export function defineModels(sequelize) {
     ])
   )
   Event.belongsTo(Project, { foreignKey: 'projectId', as: 'project' })
-  return { Setting, Migration, Project, Session, Event }
+  return { Setting, Migration, Project, Admin, Session, Event }
 }

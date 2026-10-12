@@ -21,8 +21,10 @@ export function VisoraPage({
   return (
     <>
       <Header fixed className='border-b bg-background/95 backdrop-blur'>
-        <span className='text-sm text-muted-foreground'>
-          工作空间 <span className='mx-2 text-border'>/</span>{' '}
+        <span className='min-w-0 truncate text-sm text-muted-foreground'>
+          <span className='hidden sm:inline'>
+            工作空间 <span className='mx-2 text-border'>/</span>
+          </span>
           <span className='font-medium text-foreground'>{title}</span>
         </span>
         <div className='ms-auto flex items-center gap-3'>
@@ -33,7 +35,7 @@ export function VisoraPage({
           <ThemeSwitch />
         </div>
       </Header>
-      <Main className='space-y-6 p-4 md:p-8' fluid>
+      <Main className='space-y-6 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:p-8' fluid>
         <div className='flex flex-wrap items-start justify-between gap-4'>
           <div>
             <h1 className='text-2xl font-semibold tracking-tight'>{title}</h1>

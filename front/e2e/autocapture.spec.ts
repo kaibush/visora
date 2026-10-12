@@ -1,7 +1,7 @@
 import { test, expect } from 'playwright/test'
 
 test('one script captures dynamic controls and anonymous IP without collecting form values', async ({ page, context }) => {
-  await page.request.post('/api/auth/login', { data: { password: 'visora-e2e-password-only' } })
+  await page.request.post('/api/auth/login', { data: { username: 'admin', password: 'visora-e2e-password-only' } })
   const { project } = await (await page.request.post('/api/projects', {
     data: { name: 'automatic interactions', origins: ['http://127.0.0.1:4318'] },
   })).json()

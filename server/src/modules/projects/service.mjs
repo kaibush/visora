@@ -67,6 +67,9 @@ export function createProjectService({ repository, clock, keyVault }) {
       await repository.rotateKey(id, hashToken(key), key.slice(0, 11), keyVault.encrypt(key, id))
       return key
     },
+    async remove(id) {
+      if (!(await repository.remove(id))) throw new AppError('NOT_FOUND', '项目不存在')
+    },
     async authorizeBrowser(siteId, origin) {
       const project = await repository.findBySiteId(siteId)
       if (!project?.enabled || !origin || !project.origins.includes(origin))

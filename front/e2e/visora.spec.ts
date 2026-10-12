@@ -5,7 +5,8 @@ test('create project, track a real SPA, inspect aggregate data, export CSV and l
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/')
   await expect(page.getByRole('heading', { name: '登录 Visora' })).toBeVisible()
-  await page.getByLabel('管理密码').fill('visora-e2e-password-only')
+  await page.getByLabel('账号').fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('visora-e2e-password-only')
   await page.getByRole('button', { name: '进入工作空间' }).click()
   await expect(page.getByRole('heading', { name: '访问概览' })).toBeVisible()
   await page.getByRole('link', { name: '项目管理' }).click()
@@ -51,11 +52,10 @@ test('create project, track a real SPA, inspect aggregate data, export CSV and l
   const download = await downloadPromise
   expect(download.suggestedFilename()).toMatch(/^visora-.*\.csv$/)
   await page.getByRole('link', { name: '接入指南', exact: true }).first().click()
-  await page.getByRole('combobox', { name: '选择接入项目' }).click()
-  await page.getByRole('option', { name: 'new-api E2E', exact: true }).click()
-  await expect(page.getByText(project.siteId, { exact: true })).toBeVisible()
-  await page.getByRole('tab', { name: '服务端 API' }).click()
+  await expect(page.getByText('网页接入', { exact: true })).toBeVisible()
+  await expect(page.locator('pre', { hasText: 'data-site="站点ID"' })).toBeVisible()
   await expect(page.getByText('Shell · 先设置 VISORA_SERVER_KEY')).toBeVisible()
+  await expect(page.getByRole('combobox', { name: '选择接入项目' })).toHaveCount(0)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.screenshot({ path: testInfo.outputPath('visora-mobile.png'), fullPage: true })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -67,7 +67,7 @@ test('create project, track a real SPA, inspect aggregate data, export CSV and l
 })
 
 test('tracker respects privacy signals, hash routes and renews a session after inactivity', async ({ browser, request }) => {
-  await request.post('/api/auth/login', { data: { password: 'visora-e2e-password-only' } })
+  await request.post('/api/auth/login', { data: { username: 'admin', password: 'visora-e2e-password-only' } })
   const { project } = await (await request.post('/api/projects', { data: { name: 'tracker privacy', origins: ['http://127.0.0.1:4318'] } })).json()
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -90,7 +90,7 @@ test('tracker respects privacy signals, hash routes and renews a session after i
 })
 
 test('business identity follows login, account switch and logout, and appears in the dashboard', async ({ page, context, request }, testInfo) => {
-  await request.post('/api/auth/login', { data: { password: 'visora-e2e-password-only' } })
+  await request.post('/api/auth/login', { data: { username: 'admin', password: 'visora-e2e-password-only' } })
   const { project } = await (await request.post('/api/projects', { data: { name: 'identity flow', origins: ['http://127.0.0.1:4318'] } })).json()
   const website = await context.newPage()
   await website.goto(`http://127.0.0.1:4318/?site=${project.siteId}`)
@@ -138,7 +138,8 @@ test('business identity follows login, account switch and logout, and appears in
   expect(restored.find((row: { path: string }) => row.path === '/restored')).toMatchObject({ user_id: 'restored-user', user_name: '会话已恢复', source: 'browser' })
 
   await page.goto('/sign-in')
-  await page.getByLabel('管理密码').fill('visora-e2e-password-only')
+  await page.getByLabel('账号').fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('visora-e2e-password-only')
   await page.getByRole('button', { name: '进入工作空间' }).click()
   await page.getByRole('link', { name: '访问明细', exact: true }).click()
   await page.getByLabel('用户 ID', { exact: true }).fill('42')

@@ -6,7 +6,6 @@ services:
     ports:
       - '127.0.0.1:3001:3001'
     environment:
-      VISORA_ADMIN_PASSWORD: ${VISORA_ADMIN_PASSWORD:?Set a unique password of at least 12 characters in .env}
       VISORA_ENCRYPTION_KEY: ${VISORA_ENCRYPTION_KEY:-}
       VISORA_ENCRYPTION_KEY_FILE: /app/data/encryption.key
       VISORA_DATABASE_URL: ${VISORA_DATABASE_URL:-}

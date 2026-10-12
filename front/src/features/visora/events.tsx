@@ -139,7 +139,41 @@ function EventTable({ query }: { query: string }) {
               />
             ) : (
               <>
-                <Table className='min-w-[1100px] table-fixed'>
+                <div className='space-y-3 md:hidden'>
+                  {data.events.map((event) => (
+                    <button
+                      key={event.id}
+                      type='button'
+                      className='w-full rounded-lg border p-3 text-left'
+                      onClick={() => setSelected(event)}
+                    >
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <p className='truncate text-sm font-medium'>
+                            {event.type === 'pageview'
+                              ? '页面访问'
+                              : event.label ||
+                                (event.action ? '未命名控件' : event.name)}
+                          </p>
+                          <p className='mt-1 truncate font-mono text-xs text-muted-foreground'>
+                            {event.path}
+                          </p>
+                        </div>
+                        <Badge variant='secondary' className='shrink-0'>
+                          {event.type === 'pageview'
+                            ? '页面访问'
+                            : actionNames[event.action || ''] || '业务事件'}
+                        </Badge>
+                      </div>
+                      <p className='mt-2 truncate text-xs text-muted-foreground'>
+                        {formatTime(event.occurred_at)} · {event.project_name} ·{' '}
+                        {event.user_name || event.user_id || '匿名访客'} ·{' '}
+                        {event.ip || '未记录'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+                <Table className='hidden min-w-[1100px] table-fixed md:table'>
                   <TableHeader>
                     <TableRow>
                       <TableHead className='w-32'>时间（上海）</TableHead>
@@ -240,7 +274,7 @@ function EventTable({ query }: { query: string }) {
                     ))}
                   </TableBody>
                 </Table>
-                <div className='mt-5 flex items-center justify-between gap-2 border-t pt-4 text-sm'>
+                <div className='mt-5 flex flex-col gap-3 border-t pt-4 text-sm sm:flex-row sm:items-center sm:justify-between'>
                   <span className='text-muted-foreground'>
                     第 {page} /{' '}
                     {Math.max(1, Math.ceil(data.total / data.pageSize))} 页

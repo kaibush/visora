@@ -1,0 +1,20 @@
+[Unit]
+Description=Visora 访问统计
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/project/github/kaibush/visora
+Environment=PATH=/root/.nvm/versions/node/v24.18.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3012
+Environment=VISORA_TRUST_PROXY=true
+Environment=VISORA_SECURE_COOKIE=true
+Environment=HOME=/root
+ExecStart=/root/.nvm/versions/node/v24.18.0/bin/node --env-file-if-exists=.env server/src/index.mjs
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

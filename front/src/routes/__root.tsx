@@ -14,11 +14,19 @@ export const Route = createRootRouteWithContext<{
 }>()({
   beforeLoad: ({ location }) => {
     const path = location.pathname.replace(/\/$/, '') || '/'
-    if (
-      !['/', '/sign-in', '/projects', '/events', '/integrations'].includes(path)
-    ) {
-      throw redirect({ to: '/' })
-    }
+    const allowed = new Set([
+      '/',
+      '/sign-in',
+      '/projects',
+      '/events',
+      '/integrations',
+      '/trends',
+      '/pages',
+      '/sources',
+      '/audience',
+      '/behavior',
+    ])
+    if (!allowed.has(path)) throw redirect({ to: '/' })
   },
   component: () => {
     return (

@@ -94,6 +94,35 @@ export type EventPage = {
   page: number
   pageSize: number
 }
+export type ExploreRow = {
+  key: string
+  name: string
+  count: number
+  visitors: number
+}
+export type ExploreGroup = { total: number; rows: ExploreRow[] }
+export type ExplorePoint = { date: string; count: number; visitors: number }
+export type Breakdown = ExploreGroup & {
+  dimension: string
+  metric: 'pageview' | 'event'
+}
+export type Series = {
+  dimension: string
+  value: string
+  name: string
+  metric: 'pageview' | 'event'
+  trend: ExplorePoint[]
+}
+export type DayReport = {
+  date: string
+  hours: { hour: string; count: number; visitors: number }[]
+  pages: ExploreGroup
+  referrers: ExploreGroup
+  devices: ExploreGroup
+  projects: ExploreGroup
+  actions: ExploreGroup
+}
+export type VisitorSplit = { newVisitors: number; returningVisitors: number }
 export const projectsQuery = {
   queryKey: ['visora', 'projects'],
   queryFn: () => api<{ projects: Project[] }>('/projects'),

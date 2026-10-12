@@ -7,10 +7,13 @@ import {
   Globe2,
   KeyRound,
   MoreHorizontal,
+  Pause,
   Pencil,
+  Play,
   Plus,
   Search,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +37,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -168,6 +172,7 @@ export function VisoraProjects() {
   } | null>(null)
   const [install, setInstall] = useState<Project | null>(null)
   const [rotate, setRotate] = useState<Project | null>(null)
+  const [removeTarget, setRemoveTarget] = useState<Project | null>(null)
   const update = useMutation({
     mutationFn: (project: Project) =>
       api(`/projects/${project.id}`, {
@@ -189,6 +194,16 @@ export function VisoraProjects() {
       setCredentials({ project, key: data.key })
       setRotate(null)
       void queryClient.invalidateQueries({ queryKey: ['visora', 'projects'] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const remove = useMutation({
+    mutationFn: (project: Project) =>
+      api(`/projects/${project.id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      setRemoveTarget(null)
+      void queryClient.invalidateQueries({ queryKey: ['visora'] })
+      toast.success('项目已删除')
     },
     onError: (error) => toast.error(error.message),
   })
@@ -297,7 +312,21 @@ export function VisoraProjects() {
                     disabled={update.isPending}
                     onClick={() => update.mutate(project)}
                   >
+                    {project.enabled ? (
+                      <Pause className='size-4' />
+                    ) : (
+                      <Play className='size-4' />
+                    )}
                     {project.enabled ? '暂停采集' : '恢复采集'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant='destructive'
+                    disabled={remove.isPending}
+                    onClick={() => setRemoveTarget(project)}
+                  >
+                    <Trash2 className='size-4' />
+                    删除项目
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -365,7 +394,7 @@ export function VisoraProjects() {
           </p>
           <p className='text-xs leading-5 text-muted-foreground'>
             浏览器使用公开站点
-            ID，服务端使用独立密钥。暂停项目后，两种接入方式都会停止接受新事件。
+            ID，服务端使用独立密钥。暂停后停止接收新事件；删除项目会同时清除它的全部访问记录。
           </p>
         </div>
         <Button variant='ghost' asChild>
@@ -405,7 +434,7 @@ export function VisoraProjects() {
             <DialogTitle>接入 {install?.name}</DialogTitle>
             <DialogDescription>
               将脚本添加到页面的 &lt;head&gt;
-              中即可记录匿名访问；需要登录用户详情时，按快速接入指南同步用户状态。
+              中即可记录匿名访问；需要登录用户详情时，按通用接入指南同步用户状态。
             </DialogDescription>
           </DialogHeader>
           {install && (
@@ -423,7 +452,7 @@ export function VisoraProjects() {
               </p>
               <Button asChild variant='outline'>
                 <Link to='/integrations'>
-                  查看快速接入与用户同步
+                  查看通用接入指南
                   <ArrowUpRight className='size-4' />
                 </Link>
               </Button>
@@ -431,6 +460,25 @@ export function VisoraProjects() {
           )}
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => {
+          if (!open && !remove.isPending) setRemoveTarget(null)
+        }}
+        title='删除项目？'
+        desc={
+          removeTarget
+            ? `将永久删除「${removeTarget.name}」及其 ${formatNumber(removeTarget.totalEvents)} 条访问记录，无法恢复。已接入的网站和密钥会立即失效。`
+            : ''
+        }
+        cancelBtnText='取消'
+        confirmText='删除项目'
+        destructive
+        isLoading={remove.isPending}
+        handleConfirm={() => {
+          if (removeTarget) remove.mutate(removeTarget)
+        }}
+      />
       <ConfirmDialog
         open={!!rotate}
         onOpenChange={(open) => {

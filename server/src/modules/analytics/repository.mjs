@@ -14,6 +14,60 @@ const distinct = (column, alias) => [fn('COUNT', fn('DISTINCT', col(column))), a
 const pageviewAttributes = () => [count('id', 'pv'), distinct('visitor', 'uv')]
 const pageviewNumbers = (row = {}) => ({ pv: Number(row.pv ?? 0), uv: Number(row.uv ?? 0) })
 
+const exploreDimensions = {
+  path: 'path',
+  referrer: 'referrer',
+  browser: 'browser',
+  os: 'os',
+  device: 'device',
+  language: 'language',
+  action: 'action',
+  name: 'name',
+  label: 'label',
+  project: 'projectId',
+}
+const eventDimensions = new Set(['action', 'name', 'label'])
+
+function exploreMetric(dimension, focus) {
+  return eventDimensions.has(dimension) || eventDimensions.has(focus) ? 'event' : 'pageview'
+}
+
+function timeBucket(model, unit, timezone) {
+  const dialect = model.sequelize.getDialect()
+  const shanghai = timezone === 'Asia/Shanghai'
+  const expression = {
+    sqlite:
+      unit === 'hour'
+        ? `strftime('%H', occurred_at / 1000, 'unixepoch'${shanghai ? ", '+8 hours'" : ''})`
+        : `strftime('%Y-%m-%d', occurred_at / 1000, 'unixepoch'${shanghai ? ", '+8 hours'" : ''})`,
+    postgres: `to_char(to_timestamp(occurred_at / 1000.0) AT TIME ZONE '${shanghai ? 'Asia/Shanghai' : 'UTC'}', '${unit === 'hour' ? 'HH24' : 'YYYY-MM-DD'}')`,
+    mysql: `DATE_FORMAT(DATE_ADD('1970-01-01 00:00:00', INTERVAL (occurred_at / 1000${shanghai ? ' + 28800' : ''}) SECOND), '${unit === 'hour' ? '%H' : '%Y-%m-%d'}')`,
+  }[dialect]
+  return literal(expression)
+}
+
+function exploreWhere(filter, { dimension, value, focus, focusValue } = {}) {
+  const where = eventFilter(filter, exploreMetric(dimension, focus))
+  const apply = (dim, dimValue, active) => {
+    if (!dim || !active) return
+    const column = exploreDimensions[dim]
+    if (dim === 'project') {
+      if (dimValue === undefined) return
+      where.projectId = filter.project !== 'all' && dimValue !== filter.project ? '__none__' : dimValue
+      return
+    }
+    if (dim === 'name') where.action = null
+    if (dimValue !== undefined) where[column] = dimValue
+    else if (dim === 'action' || dim === 'label') {
+      where[column] = { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] }
+    }
+  }
+  apply(focus, focusValue, Boolean(focus))
+  apply(dimension, value, true)
+  return where
+}
+
+
 /** Read model: ORM queries and dialect value conversions stay in this repository. */
 export function createAnalyticsRepository({ models }) {
   const { Event, Project } = models
@@ -130,6 +184,113 @@ export function createAnalyticsRepository({ models }) {
           }
         })
         .sort((a, b) => b.pv - a.pv || a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    },
+
+    async projectNames() {
+      return Project.findAll({ attributes: ['id', 'name'], raw: true })
+    },
+    async breakdown(filter, dimension, limit, focus, focusValue) {
+      const where = exploreWhere(filter, {
+        dimension,
+        focus,
+        focusValue: focus ? focusValue : undefined,
+      })
+      const column = exploreDimensions[dimension]
+      const [rows, total] = await Promise.all([
+        Event.findAll({
+          attributes: [
+            column,
+            [fn('COUNT', col('id')), 'count'],
+            [fn('COUNT', fn('DISTINCT', col('visitor'))), 'visitors'],
+          ],
+          where,
+          group: [column],
+          order: [
+            [fn('COUNT', col('id')), 'DESC'],
+            [column, 'ASC'],
+          ],
+          limit,
+          raw: true,
+        }),
+        Event.count({ where }),
+      ])
+      return {
+        total: Number(total),
+        rows: rows.map((row) => ({
+          key: row[column] == null ? '' : String(row[column]),
+          count: Number(row.count),
+          visitors: Number(row.visitors),
+        })),
+      }
+    },
+    async series(filter, dimension, value) {
+      const where = exploreWhere(filter, { dimension, value })
+      const bucket = timeBucket(Event, 'day', filter.timezone)
+      const rows = await Event.findAll({
+        attributes: [
+          [bucket, 'date'],
+          [fn('COUNT', col('id')), 'count'],
+          [fn('COUNT', fn('DISTINCT', col('visitor'))), 'visitors'],
+        ],
+        where,
+        group: [bucket],
+        order: [[bucket, 'ASC']],
+        raw: true,
+      })
+      return {
+        metric: exploreMetric(dimension),
+        rows: rows.map((row) => ({
+          date: String(row.date),
+          count: Number(row.count),
+          visitors: Number(row.visitors),
+        })),
+      }
+    },
+    async hourly(filter) {
+      const bucket = timeBucket(Event, 'hour', filter.timezone)
+      const rows = await Event.findAll({
+        attributes: [
+          [bucket, 'hour'],
+          [fn('COUNT', col('id')), 'count'],
+          [fn('COUNT', fn('DISTINCT', col('visitor'))), 'visitors'],
+        ],
+        where: eventFilter(filter, 'pageview'),
+        group: [bucket],
+        raw: true,
+      })
+      return rows.map((row) => ({
+        hour: String(row.hour).padStart(2, '0'),
+        count: Number(row.count),
+        visitors: Number(row.visitors),
+      }))
+    },
+    async visitorSplit(filter) {
+      const [rows] = await Event.sequelize.query(
+        `SELECT
+           COALESCE(SUM(CASE WHEN first_seen >= :start THEN 1 ELSE 0 END), 0) AS newVisitors,
+           COALESCE(SUM(CASE WHEN first_seen < :start THEN 1 ELSE 0 END), 0) AS returningVisitors
+         FROM (
+           SELECT visitor, MIN(occurred_at) AS first_seen
+           FROM events
+           WHERE type = 'pageview'
+             AND (:projectId IS NULL OR project_id = :projectId)
+             AND (:userId IS NULL OR user_id = :userId)
+           GROUP BY visitor
+           HAVING MAX(CASE WHEN occurred_at >= :start AND occurred_at < :end THEN 1 ELSE 0 END) = 1
+         ) AS visitor_first_seen`,
+        {
+          replacements: {
+            start: filter.start,
+            end: filter.end,
+            projectId: filter.project === 'all' ? null : filter.project,
+            userId: filter.userId || null,
+          },
+        }
+      )
+      return {
+        newVisitors: Number(rows[0]?.newVisitors ?? 0),
+        returningVisitors: Number(rows[0]?.returningVisitors ?? 0),
+      }
     },
     async eventRows(filter, limit, offset) {
       const rows = await Event.findAll({

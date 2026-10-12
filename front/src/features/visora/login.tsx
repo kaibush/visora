@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowRight,
@@ -14,19 +14,32 @@ import { Label } from '@/components/ui/label'
 import { api } from './api'
 
 export function VisoraLogin() {
+  const setup = useQuery({
+    queryKey: ['visora-setup'],
+    queryFn: () => api<{ required: boolean }>('/auth/setup'),
+    retry: false,
+  })
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const required = setup.data?.required === true
+
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (required && password !== confirmPassword) {
+      setError('两次输入的密码不一致')
+      return
+    }
     setLoading(true)
     setError('')
     try {
-      await api('/auth/login', {
+      await api(required ? '/auth/setup' : '/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       })
       queryClient.clear()
       await navigate({ to: '/' })
@@ -36,6 +49,7 @@ export function VisoraLogin() {
       setLoading(false)
     }
   }
+
   return (
     <div className='grid min-h-svh lg:grid-cols-2'>
       <div className='relative hidden flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:flex'>
@@ -85,40 +99,94 @@ export function VisoraLogin() {
           <div className='mb-5 flex size-11 items-center justify-center rounded-xl border bg-muted/40'>
             <LockKeyhole className='size-5 text-primary' />
           </div>
-          <h2 className='text-2xl font-semibold'>登录 Visora</h2>
-          <p className='mt-2 text-sm text-muted-foreground'>
-            进入你的统一访问统计工作空间。
-          </p>
-          <form onSubmit={submit} className='mt-8 space-y-5'>
-            <div className='space-y-2'>
-              <Label htmlFor='password'>管理密码</Label>
-              <Input
-                id='password'
-                type='password'
-                autoComplete='current-password'
-                autoFocus
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder='输入管理密码'
-                className='h-11'
-              />
-            </div>
-            {error && (
-              <p role='alert' className='text-sm text-destructive'>
-                {error}
+          {!setup.isSuccess ? (
+            <p className='text-sm text-muted-foreground'>
+              {setup.isError
+                ? setup.error instanceof Error
+                  ? setup.error.message
+                  : '无法确认工作空间状态'
+                : '正在确认工作空间状态…'}
+            </p>
+          ) : (
+            <>
+              <h2 className='text-2xl font-semibold'>
+                {required ? '创建管理员账号' : '登录 Visora'}
+              </h2>
+              <p className='mt-2 text-sm text-muted-foreground'>
+                {required
+                  ? '设置唯一的管理员账号和密码，创建后立即进入工作空间。'
+                  : '进入你的统一访问统计工作空间。'}
               </p>
-            )}
-            <Button className='h-11 w-full' disabled={loading}>
-              {loading ? '登录中…' : '进入工作空间'}
-              <ArrowRight className='size-4' />
-            </Button>
-          </form>
-          <p className='mt-6 text-xs leading-6 text-muted-foreground'>
-            使用部署时配置的管理密码登录。
-            <br />
-            所有项目数据仅对工作空间管理员可见。
-          </p>
+              <form onSubmit={submit} className='mt-8 space-y-5'>
+                <div className='space-y-2'>
+                  <Label htmlFor='username'>账号</Label>
+                  <Input
+                    id='username'
+                    autoComplete='username'
+                    autoFocus
+                    required
+                    maxLength={64}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder='输入管理员账号'
+                    className='h-11'
+                  />
+                </div>
+                <div className='space-y-2'>
+                  <Label htmlFor='password'>密码</Label>
+                  <Input
+                    id='password'
+                    type='password'
+                    autoComplete={required ? 'new-password' : 'current-password'}
+                    required
+                    minLength={required ? 12 : undefined}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={required ? '至少 12 位' : '输入密码'}
+                    className='h-11'
+                  />
+                </div>
+                {required && (
+                  <div className='space-y-2'>
+                    <Label htmlFor='confirm-password'>确认密码</Label>
+                    <Input
+                      id='confirm-password'
+                      type='password'
+                      autoComplete='new-password'
+                      required
+                      minLength={12}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder='再次输入密码'
+                      className='h-11'
+                    />
+                  </div>
+                )}
+                {error && (
+                  <p role='alert' className='text-sm text-destructive'>
+                    {error}
+                  </p>
+                )}
+                <Button className='h-11 w-full' disabled={loading}>
+                  {loading
+                    ? required
+                      ? '创建中…'
+                      : '登录中…'
+                    : required
+                      ? '创建并进入'
+                      : '进入工作空间'}
+                  <ArrowRight className='size-4' />
+                </Button>
+              </form>
+              <p className='mt-6 text-xs leading-6 text-muted-foreground'>
+                {required
+                  ? '只会创建这一个管理员，没有默认密码。请妥善保存账号和密码。'
+                  : '使用首次初始化时创建的管理员账号登录。'}
+                <br />
+                所有项目数据仅对工作空间管理员可见。
+              </p>
+            </>
+          )}
         </div>
       </main>
     </div>

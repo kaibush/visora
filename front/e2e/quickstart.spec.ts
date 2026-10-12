@@ -1,7 +1,7 @@
 import { test, expect } from 'playwright/test'
 
 test('quick integration waits for identity, handles either load order, and keeps automatic routes', async ({ page, context }, testInfo) => {
-  await page.request.post('/api/auth/login', { data: { password: 'visora-e2e-password-only' } })
+  await page.request.post('/api/auth/login', { data: { username: 'admin', password: 'visora-e2e-password-only' } })
   const { project } = await (await page.request.post('/api/projects', {
     data: { name: 'quick browser integration', origins: ['http://127.0.0.1:4318'] },
   })).json()
@@ -83,9 +83,10 @@ test('quick integration waits for identity, handles either load order, and keeps
   await manualWebsite.close()
 
   await page.goto('/integrations')
-  await expect(page.getByRole('tab', { name: '快速接入（推荐）' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('tabpanel').locator('code').filter({ hasText: '/tracker.js' })).toBeVisible()
-  await expect(page.getByRole('tabpanel').locator('code').filter({ hasText: 'export function syncVisoraUser' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '接入指南' })).toBeVisible()
+  await expect(page.locator('pre', { hasText: '/tracker.js' })).toBeVisible()
+  await page.getByText('展开同步模块源码').click()
+  await expect(page.locator('pre', { hasText: 'export function syncVisoraUser' })).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: testInfo.outputPath('visora-quickstart-mobile.png'), fullPage: true })

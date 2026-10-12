@@ -1,0 +1,19 @@
+# Visora：页面、接口和 tracker.js 都由本机 Node 提供。
+# 生产只监听 127.0.0.1:3012。3001 留给本地 pnpm dev，不要两个进程同时写同一个 SQLite。
+# 访客 IP 优先用 Cloudflare 的 CF-Connecting-IP，直连时回退到 Caddy 看到的地址。
+visora.lvyrix.com {
+	import access_log
+	encode zstd gzip
+
+	map {http.request.header.CF-Connecting-IP} {visora_client_ip} {
+		"" {remote_host}
+		default {http.request.header.CF-Connecting-IP}
+	}
+
+	reverse_proxy 127.0.0.1:3012 {
+		flush_interval -1
+		header_up X-Forwarded-For {visora_client_ip}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}

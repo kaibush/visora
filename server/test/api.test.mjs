@@ -10,6 +10,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { sendEvents } from '../../sdk/node.mjs'
 import { createServer } from 'node:http'
 
+const username = 'admin'
 const password = 'visora-test-password-only'
 const timestamp = Date.parse('2026-10-12T12:00:00Z')
 const event = (eventId, extra = {}) => ({
@@ -24,7 +25,6 @@ async function buildTestApp(options = {}) {
   // Never read database URLs or other service settings from the host environment.
   const config = loadConfig(
     {
-      password,
       database: ':memory:',
       encryptionKey: 'a'.repeat(64),
       databaseUrl: '',
@@ -40,9 +40,13 @@ async function buildTestApp(options = {}) {
 async function fixture(t, options = {}) {
   const app = await buildTestApp(options)
   t.after(() => app.close())
-  const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { password } })
-  assert.equal(login.statusCode, 200)
-  const cookie = login.cookies[0].name + '=' + login.cookies[0].value
+  const setup = await app.inject({
+    method: 'POST',
+    url: '/api/auth/setup',
+    payload: { username, password },
+  })
+  assert.equal(setup.statusCode, 200, setup.body)
+  const cookie = setup.cookies[0].name + '=' + setup.cookies[0].value
   const admin = (method, url, payload) => app.inject({ method, url, payload, headers: { cookie } })
   const create = async (name = 'new-api') => {
     const response = await admin('POST', '/api/projects', {
@@ -68,6 +72,10 @@ test('admin routes require session; login/logout, expiry and same-origin checks 
   for (const url of [
     '/api/projects',
     '/api/analytics',
+    '/api/analytics/day?date=2026-10-12',
+    '/api/analytics/breakdown?dimension=path',
+    '/api/analytics/series?dimension=path&value=/',
+    '/api/analytics/visitors',
     '/api/events',
     '/api/export',
     '/api/auth/session',
@@ -85,8 +93,13 @@ test('admin routes require session; login/logout, expiry and same-origin checks 
     401
   )
   assert.equal(
-    (await app.inject({ method: 'POST', url: '/api/auth/login', payload: { password: 'wrong' } }))
-      .statusCode,
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username, password: 'wrong' },
+      })
+    ).statusCode,
     401
   )
   const malicious = await app.inject({
@@ -99,7 +112,11 @@ test('admin routes require session; login/logout, expiry and same-origin checks 
   assert.equal((await admin('GET', '/api/auth/session')).statusCode, 200)
   clock += 8 * 86400000
   assert.equal((await admin('GET', '/api/auth/session')).statusCode, 401)
-  const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { password } })
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/login',
+    payload: { username, password },
+  })
   assert.match(login.headers['set-cookie'], /HttpOnly/)
   assert.match(login.headers['set-cookie'], /SameSite=Strict/i)
   assert.match(login.headers['set-cookie'], /Secure/)
@@ -228,6 +245,48 @@ test('batch import is atomic, bounded and validates dates, IDs, event names and 
   assert.equal((await send(key, [event('ok')])).statusCode, 202)
 })
 
+test('deleting a project removes its events and leaves other projects intact', async (t) => {
+  const { app, admin, cookie, create, send } = await fixture(t)
+  const kept = await create('keep-me')
+  const removedProject = await create('remove-me')
+  await send(kept.key, [event('kept')])
+  await send(removedProject.key, [event('gone')])
+  assert.equal((await app.inject({ method: 'DELETE', url: `/api/projects/${removedProject.project.id}` })).statusCode, 401)
+  assert.equal(
+    (
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/projects/${removedProject.project.id}`,
+        headers: { cookie, origin: 'https://attacker.example' },
+      })
+    ).statusCode,
+    403
+  )
+  const removed = await admin('DELETE', `/api/projects/${removedProject.project.id}`)
+  assert.equal(removed.statusCode, 200, removed.body)
+  assert.deepEqual(removed.json(), { ok: true })
+  assert.equal((await admin('DELETE', `/api/projects/${removedProject.project.id}`)).statusCode, 404)
+  assert.equal((await admin('GET', `/api/projects/${removedProject.project.id}/key`)).statusCode, 404)
+  assert.equal((await send(removedProject.key, [event('after-delete')])).statusCode, 401)
+  assert.equal(
+    (
+      await app.inject({
+        method: 'POST',
+        url: `/api/collect/${removedProject.project.siteId}`,
+        headers: { origin: 'https://app.example.com' },
+        payload: event('browser-after-delete'),
+      })
+    ).statusCode,
+    403
+  )
+  assert.equal(await app.db.models.Project.count(), 1)
+  assert.equal(await app.db.models.Event.count(), 1)
+  assert.deepEqual((await admin('GET', '/api/projects')).json().projects.map((project) => project.name), ['keep-me'])
+  assert.equal((await admin('GET', '/api/analytics')).json().totals.pv, 1)
+  assert.equal((await admin('GET', `/api/events?project=${kept.project.id}`)).json().total, 1)
+  assert.equal((await admin('GET', `/api/events?project=${removedProject.project.id}`)).statusCode, 404)
+})
+
 test('project pause and key rotation revoke ingestion while preserving historical reports', async (t) => {
   const { app, admin, create, send } = await fixture(t)
   const a = await create()
@@ -290,12 +349,13 @@ test('SQLite survives restarts, schema initialization is idempotent, password ch
   t.after(() => rm(directory, { recursive: true, force: true }))
   const database = join(directory, 'visora.sqlite')
   const first = await buildTestApp({ database })
-  const login = await first.inject({
+  const setup = await first.inject({
     method: 'POST',
-    url: '/api/auth/login',
-    payload: { password },
+    url: '/api/auth/setup',
+    payload: { username, password },
   })
-  const cookie = `visora_session=${login.cookies[0].value}`
+  assert.equal(setup.statusCode, 200, setup.body)
+  const cookie = `visora_session=${setup.cookies[0].value}`
   const project = (
     await first.inject({
       method: 'POST',
@@ -311,26 +371,21 @@ test('SQLite survives restarts, schema initialization is idempotent, password ch
     payload: { events: [event('saved')] },
   })
   await first.close()
-  const second = await buildTestApp({ password: password + '-changed', database })
+  const second = await buildTestApp({ database })
   try {
     assert.equal(await second.db.models.Event.count(), 1)
     assert.equal(
       (await second.inject({ url: '/api/projects', headers: { cookie } })).statusCode,
-      401
+      200
     )
     assert.equal(await second.db.models.Migration.max('version'), latestVersion)
-    const login = await second.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { password: password + '-changed' },
-    })
-    const nextCookie = `visora_session=${login.cookies[0].value}`
     const revealed = await second.inject({
       url: `/api/projects/${project.project.id}/key`,
-      headers: { cookie: nextCookie },
+      headers: { cookie },
     })
     assert.equal(revealed.statusCode, 200)
     assert.equal(revealed.json().key, project.key)
+    await second.db.models.Admin.update({ passwordHash: 'ab'.repeat(32) }, { where: { id: 1 } })
   } finally {
     await second.close()
   }
@@ -340,6 +395,16 @@ test('SQLite survives restarts, schema initialization is idempotent, password ch
     assert.equal(await upgraded.db.models.Migration.count(), latestVersion)
     assert.equal(
       (await upgraded.inject({ url: '/api/projects', headers: { cookie } })).statusCode,
+      401
+    )
+    assert.equal(
+      (
+        await upgraded.inject({
+          method: 'POST',
+          url: '/api/auth/login',
+          payload: { username, password },
+        })
+      ).statusCode,
       401
     )
   } finally {
@@ -354,15 +419,43 @@ test('SQLite survives restarts, schema initialization is idempotent, password ch
   }
 })
 
-test('login is rate limited and a weak or absent initial password is rejected', async (t) => {
-  await assert.rejects(() => buildTestApp({ password: 'short' }), /12/)
-  const { app } = await fixture(t)
+test('setup accepts one administrator and login is rate limited', async (t) => {
+  const app = await buildTestApp()
+  t.after(() => app.close())
+  assert.deepEqual((await app.inject('/api/auth/setup')).json(), { required: true })
+  assert.equal(
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/api/auth/setup',
+        payload: { username, password: 'short' },
+      })
+    ).statusCode,
+    400
+  )
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/auth/setup',
+    payload: { username, password },
+  })
+  assert.equal(created.statusCode, 200, created.body)
+  assert.deepEqual((await app.inject('/api/auth/setup')).json(), { required: false })
+  assert.equal(
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/api/auth/setup',
+        payload: { username: 'other-admin', password },
+      })
+    ).statusCode,
+    409
+  )
   let response
   for (let i = 0; i < 6; i++)
     response = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
-      payload: { password: 'incorrect' },
+      payload: { username, password: 'incorrect' },
     })
   assert.equal(response.statusCode, 429)
 })
@@ -445,7 +538,12 @@ test('legacy SQLite events migrate with UTC day buckets and stable identity salt
   const stored = await app.db.models.Event.findOne({ raw: true })
   assert.equal(stored.day, '2026-10-12')
   assert.equal(stored.visitor, 'old-visitor')
-  const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { password } })
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/auth/setup',
+    payload: { username, password },
+  })
+  assert.equal(login.statusCode, 200, login.body)
   const cookie = `visora_session=${login.cookies[0].value}`
   const report = await app.inject({
     url: '/api/analytics?from=2026-10-12&to=2026-10-12',
@@ -687,3 +785,129 @@ test('Shanghai filters, daily buckets and CSV agree across the UTC date boundary
   assert.ok(csv.includes('2026-10-11T23:59:59.000+08:00'))
   assert.ok(!csv.includes('next-shanghai-day'))
 })
+
+test('day drilldown, breakdown and visitor split stay inside the selected project', async (t) => {
+  const { admin, create, send } = await fixture(t)
+  const primary = await create('new-api')
+  const other = await create('grok2api')
+  const chrome = 'Mozilla/5.0 (Windows NT 10.0) Chrome/125.0 Safari/537.36'
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+  assert.equal(
+    (
+      await send(primary.key, [
+        event('a-old', {
+          visitorId: 'visitor-1',
+          path: '/dashboard',
+          referrer: 'https://search.example/q',
+          occurredAt: '2026-10-11T02:00:00Z',
+          userAgent: chrome,
+        }),
+        event('a-return', {
+          visitorId: 'visitor-1',
+          path: '/pricing',
+          occurredAt: '2026-10-12T02:30:00Z',
+          userAgent: chrome,
+        }),
+        event('a-new', {
+          visitorId: 'visitor-2',
+          path: '/dashboard',
+          occurredAt: '2026-10-12T03:15:00Z',
+          userAgent: iphone,
+        }),
+        event('a-click', {
+          visitorId: 'visitor-2',
+          type: 'event',
+          name: 'signup',
+          path: '/pricing',
+          occurredAt: '2026-10-12T03:20:00Z',
+          userAgent: iphone,
+          interaction: { action: 'click', target: 'button', label: '注册' },
+        }),
+        event('a-custom', {
+          visitorId: 'visitor-2',
+          type: 'event',
+          name: 'signup',
+          path: '/pricing',
+          occurredAt: '2026-10-12T03:25:00Z',
+          userAgent: iphone,
+        }),
+      ])
+    ).statusCode,
+    202
+  )
+  assert.equal(
+    (
+      await send(other.key, [
+        event('b-page', {
+          visitorId: 'visitor-9',
+          path: '/other',
+          occurredAt: '2026-10-12T04:00:00Z',
+          userAgent: chrome,
+        }),
+      ])
+    ).statusCode,
+    202
+  )
+  const base = `project=${primary.project.id}&from=2026-10-11&to=2026-10-12&timezone=Asia%2FShanghai`
+  const day = (await admin('GET', `/api/analytics/day?${base}&date=2026-10-12`)).json()
+  assert.equal(day.date, '2026-10-12')
+  assert.equal(day.hours.length, 24)
+  assert.equal(day.hours[10].count, 1)
+  assert.equal(day.hours[11].count, 1)
+  assert.equal(day.hours[12].count, 0)
+  assert.deepEqual(day.pages.rows.map((row) => row.key).sort(), ['/dashboard', '/pricing'])
+  assert.deepEqual(day.referrers.rows, [{ key: '', name: '直接访问', count: 2, visitors: 2 }])
+  assert.deepEqual(
+    day.devices.rows.map((row) => row.name),
+    ['桌面', '手机']
+  )
+  assert.equal(day.projects.rows.length, 1)
+  assert.equal(day.projects.rows[0].name, 'new-api')
+  assert.equal(day.actions.rows[0].key, 'click')
+  assert.equal(day.actions.rows[0].name, '点击')
+  const pages = (await admin('GET', `/api/analytics/breakdown?${base}&dimension=path`)).json()
+  assert.equal(pages.metric, 'pageview')
+  assert.equal(pages.total, 3)
+  assert.equal(pages.rows[0].key, '/dashboard')
+  assert.equal(pages.rows[0].count, 2)
+  const series = (
+    await admin('GET', `/api/analytics/series?${base}&dimension=path&value=${encodeURIComponent('/pricing')}`)
+  ).json()
+  assert.deepEqual(series.trend, [
+    { date: '2026-10-11', count: 0, visitors: 0 },
+    { date: '2026-10-12', count: 1, visitors: 1 },
+  ])
+  const labels = (
+    await admin('GET', `/api/analytics/breakdown?${base}&dimension=label&focus=action&focusValue=click`)
+  ).json()
+  assert.equal(labels.metric, 'event')
+  assert.deepEqual(labels.rows, [{ key: '注册', name: '注册', count: 1, visitors: 1 }])
+  const names = (await admin('GET', `/api/analytics/breakdown?${base}&dimension=name`)).json()
+  assert.deepEqual(names.rows, [{ key: 'signup', name: 'signup', count: 1, visitors: 1 }])
+  const visitors = (
+    await admin(
+      'GET',
+      `/api/analytics/visitors?project=${primary.project.id}&from=2026-10-12&to=2026-10-12&timezone=Asia%2FShanghai`
+    )
+  ).json()
+  assert.deepEqual(visitors, { newVisitors: 1, returningVisitors: 1 })
+  const isolated = (
+    await admin('GET', `/api/analytics/day?project=${other.project.id}&date=2026-10-12&timezone=Asia%2FShanghai`)
+  ).json()
+  assert.equal(isolated.pages.rows[0].key, '/other')
+  assert.equal(
+    isolated.hours.reduce((sum, row) => sum + row.count, 0),
+    1
+  )
+  const utc = (await admin('GET', `/api/analytics/day?project=${primary.project.id}&date=2026-10-12`)).json()
+  assert.equal(utc.hours[2].count, 1)
+  assert.equal(utc.hours[3].count, 1)
+  assert.equal((await admin('GET', '/api/analytics/breakdown?dimension=secret')).statusCode, 400)
+  assert.equal((await admin('GET', '/api/analytics/day')).statusCode, 400)
+  assert.equal((await admin('GET', '/api/analytics/series?dimension=path')).statusCode, 400)
+  assert.equal(
+    (await admin('GET', '/api/analytics/breakdown?dimension=name&focus=action&focusValue=click')).statusCode,
+    400
+  )
+})
+

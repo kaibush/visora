@@ -12,8 +12,8 @@ function toProject(row, stats = {}) {
   }
 }
 
-export function createProjectRepository({ models }) {
-  const { Project, Event } = models
+export function createProjectRepository(database) {
+  const { Project, Event } = database.models
   return {
     async get(id) {
       return toProject(await Project.findByPk(id, { raw: true }))
@@ -57,6 +57,15 @@ export function createProjectRepository({ models }) {
     },
     rotateKey(id, keyHash, keyPrefix, keyCiphertext) {
       return Project.update({ keyHash, keyPrefix, keyCiphertext }, { where: { id } })
+    },
+    async remove(id) {
+      return database.transaction(async (transaction) => {
+        const project = await Project.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE })
+        if (!project) return false
+        await Event.destroy({ where: { projectId: id }, transaction })
+        await project.destroy({ transaction })
+        return true
+      })
     },
   }
 }
