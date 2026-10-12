@@ -1,0 +1,24 @@
+services:
+  visora:
+    build: .
+    image: visora:local
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3001:3001'
+    environment:
+      VISORA_ADMIN_PASSWORD: ${VISORA_ADMIN_PASSWORD:?Set a unique password of at least 12 characters in .env}
+      VISORA_DATABASE_URL: ${VISORA_DATABASE_URL:-}
+      VISORA_DB_SSL: ${VISORA_DB_SSL:-false}
+      VISORA_DB_CA_FILE: ${VISORA_DB_CA_FILE:-}
+      VISORA_AUTO_MIGRATE: ${VISORA_AUTO_MIGRATE:-}
+      VISORA_RATE_LIMIT: ${VISORA_RATE_LIMIT:-1000}
+      VISORA_BROWSER_RATE_LIMIT: ${VISORA_BROWSER_RATE_LIMIT:-120}
+      VISORA_SERVER_RATE_LIMIT: ${VISORA_SERVER_RATE_LIMIT:-300}
+      VISORA_LOGIN_RATE_LIMIT: ${VISORA_LOGIN_RATE_LIMIT:-5}
+      VISORA_RETENTION_DAYS: ${VISORA_RETENTION_DAYS:-90}
+      VISORA_TRUST_PROXY: ${VISORA_TRUST_PROXY:-false}
+      VISORA_SECURE_COOKIE: ${VISORA_SECURE_COOKIE:-false}
+    volumes:
+      - visora-data:/app/data
+volumes:
+  visora-data:

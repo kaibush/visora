@@ -1,0 +1,5 @@
+packages:
+  - front
+  - server
+onlyBuiltDependencies:
+  - sqlite3

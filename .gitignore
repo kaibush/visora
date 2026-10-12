@@ -1,0 +1,9 @@
+node_modules/
+front/dist/
+data/
+.env
+*.sqlite*
+test-results/
+playwright-report/
+__pycache__/
+*.py[cod]
