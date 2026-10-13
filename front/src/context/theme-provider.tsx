@@ -59,6 +59,11 @@ export function ThemeProvider({
     const applyTheme = (currentResolvedTheme: ResolvedTheme) => {
       root.classList.remove('light', 'dark') // Remove existing theme classes
       root.classList.add(currentResolvedTheme) // Add the new theme class
+
+      // Keep the browser chrome in sync, including system theme changes on iOS.
+      document
+        .querySelector('meta[name="theme-color"]')
+        ?.setAttribute('content', getComputedStyle(root).backgroundColor)
     }
 
     const handleChange = () => {

@@ -30,7 +30,7 @@ export function VisoraMobileNav() {
   return (
     <nav
       aria-label='主导航'
-      className='fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden'
+      className='fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur md:hidden'
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className='grid grid-cols-4'>
@@ -45,7 +45,9 @@ export function VisoraMobileNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex min-h-14 flex-col items-center justify-center gap-1 text-[11px]',
-                  active ? 'font-medium text-primary' : 'text-muted-foreground'
+                  active
+                    ? 'font-medium text-sidebar-accent-foreground'
+                    : 'text-muted-foreground'
                 )}
               >
                 <item.icon className='size-5' />
