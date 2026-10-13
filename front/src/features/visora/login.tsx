@@ -52,15 +52,15 @@ export function VisoraLogin() {
 
   return (
     <div className='grid min-h-svh max-w-full overflow-x-hidden lg:grid-cols-2'>
-      <div className='relative hidden flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:flex'>
+      <div className='relative hidden flex-col justify-between overflow-hidden bg-foreground p-10 text-background lg:flex'>
         <div className='flex items-center gap-3 text-2xl font-semibold'>
-          <span className='rounded-xl bg-indigo-500 p-2'>
+          <span className='rounded-xl bg-primary p-2 text-primary-foreground'>
             <ChartNoAxesCombined />
           </span>
           Visora
         </div>
         <div className='relative z-10 max-w-lg'>
-          <span className='text-sm tracking-[0.25em] text-indigo-300'>
+          <span className='text-xs tracking-[0.22em] text-primary'>
             ONE SPACE. EVERY VISIT.
           </span>
           <h1 className='mt-6 text-5xl leading-tight font-semibold'>
@@ -68,27 +68,27 @@ export function VisoraLogin() {
             <br />
             连接每一个项目。
           </h1>
-          <p className='mt-6 text-base leading-8 text-slate-400'>
+          <p className='mt-6 max-w-md text-sm leading-7 text-background/70'>
             将分散在各个系统的访问数据汇聚一处。
             <br />
             从第一位访客，到每一次产品增长。
           </p>
-          <div className='mt-10 flex gap-6 text-sm text-slate-300'>
+          <div className='mt-8 flex gap-6 text-sm text-background/80'>
             <span className='flex items-center gap-2'>
-              <Layers className='size-4 text-indigo-400' />
+              <Layers className='size-4 text-primary' />
               多项目聚合
             </span>
             <span className='flex items-center gap-2'>
-              <Radio className='size-4 text-indigo-400' />
+              <Radio className='size-4 text-primary' />
               统一采集
             </span>
           </div>
         </div>
         <div
           aria-hidden
-          className='absolute -right-32 bottom-32 size-[500px] rounded-full border border-indigo-400/10 shadow-[0_0_0_60px_#818cf808,0_0_0_120px_#818cf806,0_0_0_180px_#818cf804]'
+          className='absolute -right-24 bottom-16 size-80 rounded-full border border-primary/20'
         />
-        <p className='text-xs text-slate-500'>Visora Analytics Platform</p>
+        <p className='text-xs text-background/50'>Visora</p>
       </div>
       <main className='flex min-w-0 items-center justify-center px-4 py-10 sm:px-6 sm:py-16'>
         <div className='w-full max-w-sm'>
@@ -117,8 +117,8 @@ export function VisoraLogin() {
                   ? '设置唯一的管理员账号和密码，创建后立即进入工作空间。'
                   : '进入你的统一访问统计工作空间。'}
               </p>
-              <form onSubmit={submit} className='mt-8 space-y-5'>
-                <div className='space-y-2'>
+              <form onSubmit={submit} className='mt-8 flex flex-col gap-4'>
+                <div className='flex flex-col gap-2'>
                   <Label htmlFor='username'>账号</Label>
                   <Input
                     id='username'
@@ -132,7 +132,7 @@ export function VisoraLogin() {
                     className='h-11'
                   />
                 </div>
-                <div className='space-y-2'>
+                <div className='flex flex-col gap-2'>
                   <Label htmlFor='password'>密码</Label>
                   <Input
                     id='password'
@@ -149,7 +149,7 @@ export function VisoraLogin() {
                   />
                 </div>
                 {required && (
-                  <div className='space-y-2'>
+                  <div className='flex flex-col gap-2'>
                     <Label htmlFor='confirm-password'>确认密码</Label>
                     <Input
                       id='confirm-password'

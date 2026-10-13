@@ -314,10 +314,7 @@ function EventTable({ query }: { query: string }) {
 export function VisoraEvents() {
   const { query } = useAnalyticsFilter()
   return (
-    <VisoraPage
-      title='访问明细'
-      description='查看页面访问、业务事件及接入系统主动上报的用户信息。未上报身份的记录显示为匿名访客。'
-    >
+    <VisoraPage title='访问明细'>
       <EventTable key={query} query={query} />
     </VisoraPage>
   )

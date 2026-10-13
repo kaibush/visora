@@ -7,6 +7,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
 import { AnalyticsProvider } from '@/features/visora/filter'
+import { VisoraMobileNav } from '@/features/visora/shared'
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
@@ -32,10 +33,12 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
                 // If layout is fixed and sidebar is inset,
                 // set the height to 100svh - spacing (total margins) to prevent overflow
-                'peer-data-[variant=inset]:has-data-[layout=fixed]:h-[calc(100svh-(var(--spacing)*4))]'
+                'peer-data-[variant=inset]:has-data-[layout=fixed]:h-[calc(100svh-(var(--spacing)*4))]',
+                'max-md:pb-[calc(4.25rem+env(safe-area-inset-bottom))]'
               )}
             >
               {children ?? <Outlet />}
+              <VisoraMobileNav />
             </SidebarInset>
           </SidebarProvider>
         </LayoutProvider>

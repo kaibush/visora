@@ -12,13 +12,14 @@ import {
   YAxis,
 } from 'recharts'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -32,6 +33,7 @@ import {
 } from './api'
 import { AnalyticsFilters, useAnalyticsFilter } from './filter'
 import { ErrorState } from './shared'
+import { useMinWidth } from './use-min-width'
 
 type Companion = { dimension: string; title: string }
 type BarPoint = { key: string; label: string; count: number; visitors: number }
@@ -126,7 +128,7 @@ function ClickableBars({
           <Bar
             dataKey='count'
             name={countLabel}
-            fill='#6366f1'
+            fill='var(--chart-1)'
             radius={[4, 4, 0, 0]}
             minPointSize={onSelect ? 3 : 0}
             cursor={onSelect ? 'pointer' : undefined}
@@ -138,14 +140,16 @@ function ClickableBars({
             {data.map((point) => (
               <Cell
                 key={point.key}
-                fill={point.key === selected ? '#0f766e' : '#6366f1'}
+                fill={
+                  point.key === selected ? 'var(--chart-5)' : 'var(--chart-1)'
+                }
               />
             ))}
           </Bar>
           <Bar
             dataKey='visitors'
             name={visitorLabel}
-            fill='#14b8a6'
+            fill='var(--chart-2)'
             radius={[4, 4, 0, 0]}
             minPointSize={onSelect ? 3 : 0}
             cursor={onSelect ? 'pointer' : undefined}
@@ -179,7 +183,7 @@ function RankList({
     )
   }
   return (
-    <div className='space-y-2'>
+    <div className='flex flex-col gap-1.5'>
       {rows.map((row) => {
         const share = total ? Math.round((row.count / total) * 100) : 0
         const active = selected === row.key
@@ -268,6 +272,7 @@ function DimensionExplorer({
   visitorLabel: string
   rankTitle: string
 }) {
+  const desktop = useMinWidth(1280)
   const [selected, setSelected] = useState<string | null>(null)
   const breakdown = useBreakdown(dimension)
   const series = useSeries(dimension, selected)
@@ -286,122 +291,133 @@ function DimensionExplorer({
   const choose = (key: string) =>
     setSelected((current) => (current === key ? null : key))
 
-  return (
-    <div className='grid items-start gap-5 xl:grid-cols-2'>
-      <Card className='shadow-none'>
-        <CardHeader>
-          <CardTitle className='text-base'>{rankTitle}</CardTitle>
-          <CardDescription>
-            点击一行，查看它的每日柱状趋势和构成。
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {breakdown.isPending && <Skeleton className='h-64 rounded-lg' />}
-          {breakdown.error && (
-            <ErrorState
-              error={breakdown.error}
-              retry={() => void breakdown.refetch()}
-            />
-          )}
-          {breakdown.data && (
-            <RankList
-              rows={breakdown.data.rows}
-              total={breakdown.data.total}
-              selected={selected}
-              onSelect={choose}
-            />
-          )}
-        </CardContent>
-      </Card>
-      <div className='space-y-5'>
-        {!selected && (
-          <Card className='shadow-none'>
-            <CardContent className='py-16 text-center text-sm text-muted-foreground'>
-              从列表中选择一个条目。切换上方的项目后，这里只保留该系统自己的数据。
-            </CardContent>
-          </Card>
-        )}
-        {selected && (
-          <Card className='shadow-none'>
-            <CardHeader className='flex flex-row items-start justify-between gap-3'>
-              <div className='min-w-0 space-y-1'>
-                <CardTitle
-                  className='truncate text-base'
-                  title={series.data?.name}
-                >
-                  {series.data?.name || '加载中'}
-                </CardTitle>
-                <CardDescription>
-                  {countLabel}与{visitorLabel}按天展开，再次点击可取消。
-                </CardDescription>
-              </div>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => setSelected(null)}
-              >
-                关闭
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {series.isPending && <Skeleton className='h-64 rounded-lg' />}
-              {series.error && (
-                <ErrorState
-                  error={series.error}
-                  retry={() => void series.refetch()}
-                />
-              )}
-              {series.data && (
-                <ClickableBars
-                  label={`${series.data.name}的每日${countLabel}`}
-                  countLabel={countLabel}
-                  visitorLabel={visitorLabel}
-                  data={series.data.trend.map((point) => ({
-                    key: point.date,
-                    label: point.date.slice(5),
-                    count: point.count,
-                    visitors: point.visitors,
-                  }))}
-                />
-              )}
-            </CardContent>
-          </Card>
-        )}
-        {selected && (
-          <div className='grid gap-5 sm:grid-cols-2'>
-            {companions.map((companion, index) => {
-              const query = companionData[index]
-              return (
-                <Card key={companion.dimension} className='shadow-none'>
-                  <CardHeader>
-                    <CardTitle className='text-base'>
-                      {companion.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {query?.isPending && (
-                      <Skeleton className='h-36 rounded-lg' />
-                    )}
-                    {query?.error && (
-                      <ErrorState
-                        error={query.error}
-                        retry={() => void query.refetch()}
-                      />
-                    )}
-                    {query?.data && (
-                      <RankList
-                        rows={query.data.rows}
-                        total={query.data.total}
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+  const detail = selected ? (
+    <div className='flex flex-col gap-3'>
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0'>
+          <p className='truncate text-sm font-medium' title={series.data?.name}>
+            {series.data?.name || '加载中'}
+          </p>
+          <p className='text-xs text-muted-foreground'>
+            {countLabel}与{visitorLabel}按天展开
+          </p>
+        </div>
+        {desktop && (
+          <Button variant='ghost' size='sm' onClick={() => setSelected(null)}>
+            关闭
+          </Button>
         )}
       </div>
+      {series.isPending && <Skeleton className='h-52 rounded-lg' />}
+      {series.error && (
+        <ErrorState error={series.error} retry={() => void series.refetch()} />
+      )}
+      {series.data && (
+        <ClickableBars
+          label={`${series.data.name}的每日${countLabel}`}
+          countLabel={countLabel}
+          visitorLabel={visitorLabel}
+          data={series.data.trend.map((point) => ({
+            key: point.date,
+            label: point.date.slice(5),
+            count: point.count,
+            visitors: point.visitors,
+          }))}
+        />
+      )}
+      {companions.length > 0 && (
+        <Tabs defaultValue={companions[0]?.dimension}>
+          <TabsList className='w-full'>
+            {companions.map((companion) => (
+              <TabsTrigger
+                key={companion.dimension}
+                value={companion.dimension}
+              >
+                {companion.title}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {companions.map((companion, index) => {
+            const query = companionData[index]
+            return (
+              <TabsContent
+                key={companion.dimension}
+                value={companion.dimension}
+              >
+                {query?.isPending && <Skeleton className='h-28 rounded-lg' />}
+                {query?.error && (
+                  <ErrorState
+                    error={query.error}
+                    retry={() => void query.refetch()}
+                  />
+                )}
+                {query?.data && (
+                  <RankList rows={query.data.rows} total={query.data.total} />
+                )}
+              </TabsContent>
+            )
+          })}
+        </Tabs>
+      )}
     </div>
+  ) : (
+    <p className='py-16 text-center text-sm text-muted-foreground'>
+      从左侧选择一条记录
+    </p>
+  )
+
+  return (
+    <>
+      <div className='grid items-start gap-3 xl:grid-cols-2'>
+        <Card className='gap-3 py-4 shadow-none'>
+          <CardHeader className='px-4'>
+            <CardTitle className='text-sm'>{rankTitle}</CardTitle>
+          </CardHeader>
+          <CardContent className='px-3'>
+            {breakdown.isPending && <Skeleton className='h-52 rounded-lg' />}
+            {breakdown.error && (
+              <ErrorState
+                error={breakdown.error}
+                retry={() => void breakdown.refetch()}
+              />
+            )}
+            {breakdown.data && (
+              <RankList
+                rows={breakdown.data.rows}
+                total={breakdown.data.total}
+                selected={selected}
+                onSelect={choose}
+              />
+            )}
+          </CardContent>
+        </Card>
+        {desktop ? (
+          <Card className='gap-3 py-4 shadow-none'>
+            <CardContent className='px-4'>{detail}</CardContent>
+          </Card>
+        ) : (
+          <Sheet
+            open={selected !== null}
+            onOpenChange={(open) => {
+              if (!open) setSelected(null)
+            }}
+          >
+            <SheetContent
+              side='bottom'
+              className='max-h-[88vh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]'
+            >
+              <SheetHeader>
+                <SheetTitle>{series.data?.name || rankTitle}</SheetTitle>
+                <SheetDescription>
+                  每日趋势和构成。再次点选可关闭。
+                </SheetDescription>
+              </SheetHeader>
+              <div className='px-4 pb-4'>{detail}</div>
+            </SheetContent>
+          </Sheet>
+        )}
+      </div>
+    </>
   )
 }
 
@@ -414,7 +430,42 @@ function dayTitle(date: string) {
   }).format(new Date(`${date}T00:00:00+08:00`))
 }
 
+function DayBreakdown({
+  day,
+  showProjects,
+}: {
+  day: DayReport
+  showProjects: boolean
+}) {
+  const groups = [
+    { id: 'pages', title: '页面', group: day.pages },
+    { id: 'referrers', title: '来源', group: day.referrers },
+    { id: 'devices', title: '设备', group: day.devices },
+    { id: 'actions', title: '操作', group: day.actions },
+    ...(showProjects
+      ? [{ id: 'projects', title: '系统', group: day.projects }]
+      : []),
+  ]
+  return (
+    <Tabs defaultValue='pages'>
+      <TabsList className='w-full'>
+        {groups.map((item) => (
+          <TabsTrigger key={item.id} value={item.id}>
+            {item.title}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {groups.map((item) => (
+        <TabsContent key={item.id} value={item.id}>
+          <RankList rows={item.group.rows} total={item.group.total} />
+        </TabsContent>
+      ))}
+    </Tabs>
+  )
+}
+
 export function VisoraTrends() {
+  const desktop = useMinWidth(1280)
   const { query, filter, setFilter } = useAnalyticsFilter()
   const navigate = useNavigate()
   const [date, setDate] = useState<string | null>(null)
@@ -445,128 +496,138 @@ export function VisoraTrends() {
   const choose = (key: string) =>
     setDate((current) => (current === key ? null : key))
 
+  const detail = (
+    <div className='flex flex-col gap-3'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <p className='text-sm font-medium'>
+          {activeDate ? dayTitle(activeDate) : '选择一天'}
+        </p>
+        {activeDate && (
+          <div className='flex gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='min-h-11 xl:min-h-8'
+              onClick={() => {
+                setFilter({ ...filter, from: activeDate, to: activeDate })
+                void navigate({ to: '/events' })
+              }}
+            >
+              当天明细
+            </Button>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='min-h-11 xl:min-h-8'
+              onClick={() => setDate(null)}
+            >
+              关闭
+            </Button>
+          </div>
+        )}
+      </div>
+      {!activeDate && (
+        <p className='py-16 text-center text-sm text-muted-foreground'>
+          点击柱子查看这一天的小时、页面和来源。
+        </p>
+      )}
+      {activeDate && day.isPending && <Skeleton className='h-52 rounded-lg' />}
+      {activeDate && day.error && (
+        <ErrorState error={day.error} retry={() => void day.refetch()} />
+      )}
+      {activeDate && day.data && (
+        <>
+          <ClickableBars
+            label={`${activeDate}的小时访问`}
+            countLabel='浏览量'
+            visitorLabel='独立访客'
+            data={day.data.hours.map((hour) => ({
+              key: hour.hour,
+              label: hour.hour,
+              count: hour.count,
+              visitors: hour.visitors,
+            }))}
+          />
+          <DayBreakdown
+            day={day.data}
+            showProjects={filter.project === 'all'}
+          />
+        </>
+      )}
+    </div>
+  )
+
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <FilterBar />
       {report.error && (
         <ErrorState error={report.error} retry={() => void report.refetch()} />
       )}
-      {report.isPending && <Skeleton className='h-80 rounded-xl' />}
+      {report.isPending && <Skeleton className='h-64 rounded-xl' />}
       {report.data && (
-        <Card className='shadow-none'>
-          <CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='space-y-1'>
-              <CardTitle className='text-base'>每日访问</CardTitle>
-              <CardDescription>
-                紫色是浏览量，青色是独立访客。点击柱子下钻当天。
-              </CardDescription>
-            </div>
-            <div className='flex flex-wrap gap-4 text-xs text-muted-foreground'>
-              <span className='flex items-center gap-2'>
-                <i className='size-2 rounded-full bg-indigo-500' />
-                浏览量
-              </span>
-              <span className='flex items-center gap-2'>
-                <i className='size-2 rounded-full bg-teal-500' />
-                独立访客
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ClickableBars
-              label='每日浏览量和独立访客'
-              countLabel='浏览量'
-              visitorLabel='独立访客'
-              data={points}
-              selected={activeDate}
-              onSelect={choose}
-            />
-          </CardContent>
-        </Card>
-      )}
-      {activeDate && (
-        <Card className='shadow-none'>
-          <CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-            <div>
-              <CardTitle className='text-base'>
-                {dayTitle(activeDate)}
-              </CardTitle>
-              <CardDescription>
-                这一天的小时分布。明细仍按当前项目隔离。
-              </CardDescription>
-            </div>
-            <div className='flex flex-wrap gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => {
-                  setFilter({ ...filter, from: activeDate, to: activeDate })
-                  void navigate({ to: '/events' })
-                }}
+        <div className='grid items-stretch gap-3 xl:grid-cols-5'>
+          <Card className='gap-3 py-4 shadow-none xl:col-span-3'>
+            <CardHeader className='flex flex-row items-center justify-between px-4'>
+              <CardTitle className='text-sm'>每日访问</CardTitle>
+              <div className='flex gap-3 text-xs text-muted-foreground'>
+                <span className='inline-flex items-center gap-1.5'>
+                  <i className='size-2 rounded-full bg-chart-1' />
+                  PV
+                </span>
+                <span className='inline-flex items-center gap-1.5'>
+                  <i className='size-2 rounded-full bg-chart-2' />
+                  UV
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className='px-2'>
+              <ClickableBars
+                label='每日浏览量和独立访客'
+                countLabel='浏览量'
+                visitorLabel='独立访客'
+                data={points}
+                selected={activeDate}
+                onSelect={choose}
+              />
+            </CardContent>
+          </Card>
+          {desktop ? (
+            <Card className='gap-3 py-4 shadow-none xl:col-span-2'>
+              <CardContent className='px-4'>{detail}</CardContent>
+            </Card>
+          ) : (
+            <Sheet
+              open={activeDate !== null}
+              onOpenChange={(open) => {
+                if (!open) setDate(null)
+              }}
+            >
+              <SheetContent
+                side='bottom'
+                className='max-h-[88vh] overflow-y-auto rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]'
               >
-                查看当天明细
-              </Button>
-              <Button variant='ghost' size='sm' onClick={() => setDate(null)}>
-                关闭
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className='space-y-5'>
-            {day.isPending && <Skeleton className='h-64 rounded-lg' />}
-            {day.error && (
-              <ErrorState error={day.error} retry={() => void day.refetch()} />
-            )}
-            {day.data && (
-              <>
-                <ClickableBars
-                  label={`${activeDate}的小时访问`}
-                  countLabel='浏览量'
-                  visitorLabel='独立访客'
-                  data={day.data.hours.map((hour) => ({
-                    key: hour.hour,
-                    label: hour.hour,
-                    count: hour.count,
-                    visitors: hour.visitors,
-                  }))}
-                />
-                <div className='grid gap-5 lg:grid-cols-2'>
-                  {[
-                    { title: '页面', group: day.data.pages },
-                    { title: '来源', group: day.data.referrers },
-                    { title: '设备', group: day.data.devices },
-                    { title: '操作', group: day.data.actions },
-                    ...(filter.project === 'all'
-                      ? [{ title: '系统', group: day.data.projects }]
-                      : []),
-                  ].map((item) => (
-                    <Card key={item.title} className='shadow-none'>
-                      <CardHeader>
-                        <CardTitle className='text-base'>
-                          {item.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <RankList
-                          rows={item.group.rows}
-                          total={item.group.total}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                <SheetHeader>
+                  <SheetTitle>
+                    {activeDate ? dayTitle(activeDate) : '当天'}
+                  </SheetTitle>
+                  <SheetDescription>
+                    小时分布，以及页面、来源和设备。
+                  </SheetDescription>
+                </SheetHeader>
+                <div className='px-4 pb-4'>{detail}</div>
+              </SheetContent>
+            </Sheet>
+          )}
+        </div>
       )}
-    </>
+    </div>
   )
 }
 
 export function VisoraPages() {
   const { filter } = useAnalyticsFilter()
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <FilterBar />
       <DimensionExplorer
         dimension='path'
@@ -580,14 +641,14 @@ export function VisoraPages() {
             : []),
         ]}
       />
-    </>
+    </div>
   )
 }
 
 export function VisoraSources() {
   const { filter } = useAnalyticsFilter()
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <FilterBar />
       <DimensionExplorer
         dimension='referrer'
@@ -601,7 +662,7 @@ export function VisoraSources() {
             : []),
         ]}
       />
-    </>
+    </div>
   )
 }
 
@@ -618,18 +679,8 @@ export function VisoraAudience() {
     queryKey: ['visora', 'visitors', query],
     queryFn: () => api<VisitorSplit>(`/analytics/visitors?${query}`),
   })
-  const cards = visitors.data
-    ? [
-        ['新访客', visitors.data.newVisitors, '这段时间内第一次出现在当前项目'],
-        [
-          '回访访客',
-          visitors.data.returningVisitors,
-          '当前项目里更早来过，这次又出现',
-        ],
-      ]
-    : []
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <FilterBar />
       {visitors.error && (
         <ErrorState
@@ -637,33 +688,33 @@ export function VisoraAudience() {
           retry={() => void visitors.refetch()}
         />
       )}
-      {visitors.isPending && (
-        <div className='grid gap-4 sm:grid-cols-2'>
-          <Skeleton className='h-28 rounded-xl' />
-          <Skeleton className='h-28 rounded-xl' />
-        </div>
-      )}
+      {visitors.isPending && <Skeleton className='h-16 rounded-xl' />}
       {visitors.data && (
-        <div className='grid gap-4 sm:grid-cols-2'>
-          {cards.map(([title, value, detail]) => (
-            <Card key={String(title)} className='shadow-none'>
-              <CardHeader className='pb-0'>
-                <CardTitle className='text-sm font-medium text-muted-foreground'>
-                  {title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className='text-3xl font-semibold tabular-nums'>
-                  {formatNumber(Number(value))}
-                </p>
-                <p className='mt-2 text-xs text-muted-foreground'>{detail}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className='grid grid-cols-2 gap-2'>
+          <Card className='gap-1 py-3 shadow-none'>
+            <CardHeader className='px-3 pb-0'>
+              <CardTitle className='text-xs font-medium text-muted-foreground'>
+                新访客
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='px-3 text-2xl font-semibold tabular-nums'>
+              {formatNumber(visitors.data.newVisitors)}
+            </CardContent>
+          </Card>
+          <Card className='gap-1 py-3 shadow-none'>
+            <CardHeader className='px-3 pb-0'>
+              <CardTitle className='text-xs font-medium text-muted-foreground'>
+                回访
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='px-3 text-2xl font-semibold tabular-nums'>
+              {formatNumber(visitors.data.returningVisitors)}
+            </CardContent>
+          </Card>
         </div>
       )}
       <Tabs defaultValue='device'>
-        <TabsList className='flex h-auto w-full flex-wrap justify-start'>
+        <TabsList className='w-full'>
           {audiences.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.title}
@@ -671,7 +722,7 @@ export function VisoraAudience() {
           ))}
         </TabsList>
         {audiences.map((item) => (
-          <TabsContent key={item.value} value={item.value} className='mt-5'>
+          <TabsContent key={item.value} value={item.value}>
             <DimensionExplorer
               dimension={item.dimension}
               rankTitle={item.title}
@@ -682,47 +733,47 @@ export function VisoraAudience() {
           </TabsContent>
         ))}
       </Tabs>
-    </>
+    </div>
   )
 }
 
 export function VisoraBehavior() {
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <FilterBar />
-      <section className='space-y-3'>
-        <div>
-          <h2 className='text-base font-medium'>自动采集</h2>
-          <p className='mt-1 text-sm text-muted-foreground'>
-            按钮、链接、菜单、开关和表单提交。点击后可看到操作名称和发生页面。
+      <Tabs defaultValue='auto'>
+        <TabsList>
+          <TabsTrigger value='auto'>自动采集</TabsTrigger>
+          <TabsTrigger value='custom'>业务事件</TabsTrigger>
+        </TabsList>
+        <TabsContent value='auto' className='flex flex-col gap-3'>
+          <p className='text-xs text-muted-foreground'>
+            按钮、链接、菜单、开关和表单提交。只记录操作名称。
           </p>
-        </div>
-        <DimensionExplorer
-          dimension='action'
-          rankTitle='操作类型'
-          countLabel='次数'
-          visitorLabel='访客'
-          companions={[
-            { dimension: 'label', title: '操作名称' },
-            { dimension: 'path', title: '所在页面' },
-          ]}
-        />
-      </section>
-      <section className='space-y-3'>
-        <div>
-          <h2 className='text-base font-medium'>业务事件</h2>
-          <p className='mt-1 text-sm text-muted-foreground'>
-            手动上报的结果，例如注册成功或任务完成。自动采集的点击不会混进这里。
+          <DimensionExplorer
+            dimension='action'
+            rankTitle='操作类型'
+            countLabel='次数'
+            visitorLabel='访客'
+            companions={[
+              { dimension: 'label', title: '操作名称' },
+              { dimension: 'path', title: '所在页面' },
+            ]}
+          />
+        </TabsContent>
+        <TabsContent value='custom' className='flex flex-col gap-3'>
+          <p className='text-xs text-muted-foreground'>
+            手动上报的结果，例如注册成功或任务完成。
           </p>
-        </div>
-        <DimensionExplorer
-          dimension='name'
-          rankTitle='事件名称'
-          countLabel='次数'
-          visitorLabel='访客'
-          companions={[{ dimension: 'path', title: '发生页面' }]}
-        />
-      </section>
-    </>
+          <DimensionExplorer
+            dimension='name'
+            rankTitle='事件名称'
+            countLabel='次数'
+            visitorLabel='访客'
+            companions={[{ dimension: 'path', title: '发生页面' }]}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

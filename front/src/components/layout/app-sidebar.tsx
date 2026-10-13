@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import {
-  ChartNoAxesCombined,
-  ChevronRight,
-  LogOut,
-  ShieldCheck,
-} from 'lucide-react'
+import { ChartNoAxesCombined, LogOut, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { useLayout } from '@/context/layout-provider'
 import { Button } from '@/components/ui/button'
@@ -43,7 +38,7 @@ export function AppSidebar() {
   }
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
-      <SidebarHeader className='px-3 py-5'>
+      <SidebarHeader className='px-3 py-3'>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -74,19 +69,6 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className='gap-4 p-4'>
-        <div className='rounded-lg border bg-muted/30 p-3 group-data-[collapsible=icon]:hidden'>
-          <p className='text-xs font-medium'>让数据连接你的产品</p>
-          <p className='mt-2 text-xs leading-5 text-muted-foreground'>
-            用一段脚本，开启统一的访问洞察。
-          </p>
-          <Link
-            to='/integrations'
-            className='mt-3 flex items-center gap-1 text-xs text-primary'
-          >
-            查看接入指南
-            <ChevronRight className='size-3' />
-          </Link>
-        </div>
         <div className='flex items-center gap-2 border-t pt-4'>
           <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
             <ShieldCheck className='size-4' />
@@ -100,7 +82,7 @@ export function AppSidebar() {
           <Button
             size='icon'
             variant='ghost'
-            className='size-8 group-data-[collapsible=icon]:hidden'
+            className='size-11 group-data-[collapsible=icon]:hidden'
             aria-label='退出登录'
             disabled={loading}
             onClick={logout}

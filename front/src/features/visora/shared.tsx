@@ -1,64 +1,89 @@
 import { type ReactNode } from 'react'
-import { Link } from '@tanstack/react-router'
-import { AlertCircle, ArrowUpRight, Radar } from 'lucide-react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import {
+  Activity,
+  AlertCircle,
+  ArrowUpRight,
+  Code2,
+  FolderKanban,
+  LayoutDashboard,
+  Radar,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ThemeSwitch } from '@/components/theme-switch'
 
+const mobileNav = [
+  { to: '/', label: '概览', icon: LayoutDashboard, exact: true },
+  { to: '/events', label: '明细', icon: Activity, exact: false },
+  { to: '/projects', label: '项目', icon: FolderKanban, exact: false },
+  { to: '/integrations', label: '接入', icon: Code2, exact: false },
+] as const
+
+export function VisoraMobileNav() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  return (
+    <nav
+      aria-label='主导航'
+      className='fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden'
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <ul className='grid grid-cols-4'>
+        {mobileNav.map((item) => {
+          const active = item.exact
+            ? pathname === item.to
+            : pathname === item.to || pathname.startsWith(`${item.to}/`)
+          return (
+            <li key={item.to}>
+              <Link
+                to={item.to}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex min-h-14 flex-col items-center justify-center gap-1 text-[11px]',
+                  active ? 'font-medium text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <item.icon className='size-5' />
+                {item.label}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
+  )
+}
+
 export function VisoraPage({
   title,
-  description,
   children,
   action,
+  toolbar,
 }: {
   title: string
-  description: string
   children: ReactNode
   action?: ReactNode
+  toolbar?: ReactNode
 }) {
   return (
     <>
       <Header fixed className='border-b bg-background/95 backdrop-blur'>
-        <span className='min-w-0 flex-1 truncate text-sm text-muted-foreground'>
-          <span className='hidden sm:inline'>
-            工作空间 <span className='mx-2 text-border'>/</span>
-          </span>
-          <span className='font-medium text-foreground'>{title}</span>
-        </span>
-        <div className='ms-auto flex shrink-0 items-center gap-2 sm:gap-3'>
-          <span className='hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs text-muted-foreground md:flex'>
-            <span className='size-1.5 rounded-full bg-emerald-500' />
-            Visora
-          </span>
+        <h1 className='min-w-0 flex-1 truncate text-base font-semibold tracking-tight'>
+          {title}
+        </h1>
+        <div className='ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2'>
+          {action}
           <ThemeSwitch />
         </div>
       </Header>
-      <Main
-        className='min-w-0 space-y-5 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:space-y-6 sm:p-4 md:p-8'
-        fluid
-      >
-        <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between'>
-          <div className='min-w-0'>
-            <h1 className='text-xl font-semibold tracking-tight sm:text-2xl'>
-              {title}
-            </h1>
-            <p className='mt-1.5 text-sm leading-6 text-muted-foreground'>
-              {description}
-            </p>
-          </div>
-          {action && (
-            <div className='w-full shrink-0 sm:w-auto [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto'>
-              {action}
-            </div>
-          )}
-        </div>
+      <Main className='flex flex-col gap-3 p-3 md:gap-4 md:p-4' fluid>
+        {toolbar}
         {children}
-        <footer className='flex flex-wrap justify-between gap-2 border-t pt-5 text-xs text-muted-foreground'>
-          <span>Visora · 让每一次访问，都有迹可循</span>
-          <span>上海时区 · 访客身份按项目隔离</span>
-        </footer>
       </Main>
     </>
   )
@@ -74,11 +99,11 @@ export function ErrorState({
   return (
     <div
       role='alert'
-      className='flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-5'
+      className='flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4'
     >
       <AlertCircle className='size-5 text-destructive' />
-      <p className='flex-1 text-sm'>{error.message}</p>
-      <Button variant='outline' onClick={retry}>
+      <p className='min-w-0 flex-1 text-sm'>{error.message}</p>
+      <Button variant='outline' className='min-h-11' onClick={retry}>
         重新加载
       </Button>
     </div>
@@ -105,7 +130,7 @@ export function EmptyState({
           {description}
         </p>
         {link && (
-          <Button asChild className='mt-5' variant='outline'>
+          <Button asChild className='mt-5 min-h-11' variant='outline'>
             <Link to='/projects'>
               接入项目
               <ArrowUpRight className='size-4' />

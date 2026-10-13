@@ -1,6 +1,15 @@
-import { Link, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { type AnalysisView } from './analysis-views'
 import {
   VisoraAudience,
@@ -11,107 +20,91 @@ import {
 } from './explore'
 import { OverviewPanel } from './overview'
 import { VisoraPage } from './shared'
+import { useMinWidth } from './use-min-width'
 
-const sections: {
-  id: AnalysisView
-  label: string
-  title: string
-  description: string
-}[] = [
-  {
-    id: 'overview',
-    label: '概览',
-    title: '访问概览',
-    description:
-      '每一个项目的访问表现，一目了然。趋势、页面、来源、受众和行为都在这一页切换。',
-  },
-  {
-    id: 'trends',
-    label: '趋势',
-    title: '访问趋势',
-    description:
-      '用柱状图看每天的浏览量和访客。点击某一天可以下钻到小时、页面和来源；选择单个项目后只看该系统。',
-  },
-  {
-    id: 'pages',
-    label: '页面',
-    title: '页面分析',
-    description:
-      '查看哪些页面被访问。点击页面可下钻每日趋势、来源，以及它属于哪个系统。',
-  },
-  {
-    id: 'sources',
-    label: '来源',
-    title: '来源分析',
-    description:
-      '查看访客从哪里进入。没有来源时记为直接访问。点击来源可看到落地页和每天的变化。',
-  },
-  {
-    id: 'audience',
-    label: '受众',
-    title: '受众环境',
-    description:
-      '按设备、浏览器、系统和语言查看访客。新访客与回访按项目分别计算，不会把其他系统的历史访问算进来。',
-  },
-  {
-    id: 'behavior',
-    label: '行为',
-    title: '交互行为',
-    description:
-      '自动记录点击、切换和提交，以及各系统手动上报的业务结果。这里只记录操作名称，不记录输入内容。',
-  },
+const sections: { id: AnalysisView; label: string }[] = [
+  { id: 'overview', label: '概览' },
+  { id: 'trends', label: '趋势' },
+  { id: 'pages', label: '页面' },
+  { id: 'sources', label: '来源' },
+  { id: 'audience', label: '受众' },
+  { id: 'behavior', label: '行为' },
 ]
 
-function AnalysisNav({ current }: { current: AnalysisView }) {
-  return (
-    <div className='-mx-1 overflow-x-auto'>
-      <nav
-        aria-label='分析内容'
-        className='flex w-max min-w-full gap-1 rounded-xl bg-muted p-1'
+function AnalysisSwitch({ current }: { current: AnalysisView }) {
+  const desktop = useMinWidth(768)
+  const navigate = useNavigate()
+  if (!desktop) {
+    return (
+      <Select
+        value={current}
+        onValueChange={(value) =>
+          void navigate({
+            to: '/',
+            search: {
+              view: value === 'overview' ? undefined : (value as AnalysisView),
+            },
+          })
+        }
       >
-        {sections.map((item) => {
-          const active = item.id === current
-          return (
-            <Link
-              key={item.id}
-              to='/'
-              search={{ view: item.id === 'overview' ? undefined : item.id }}
-              aria-current={active ? 'page' : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center rounded-lg px-3 text-sm whitespace-nowrap ${
-                active
-                  ? 'bg-background font-medium text-foreground shadow-sm'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {item.label}
-            </Link>
-          )
-        })}
-      </nav>
-    </div>
+        <SelectTrigger className='h-11 w-full' aria-label='分析内容'>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {sections.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    )
+  }
+  return (
+    <nav aria-label='分析内容' className='flex flex-wrap gap-1'>
+      {sections.map((item) => {
+        const active = item.id === current
+        return (
+          <Link
+            key={item.id}
+            to='/'
+            search={{ view: item.id === 'overview' ? undefined : item.id }}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'inline-flex h-8 items-center rounded-md px-3 text-sm',
+              active
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            {item.label}
+          </Link>
+        )
+      })}
+    </nav>
   )
 }
 
 export function VisoraAnalytics() {
   const { view } = useSearch({ from: '/_authenticated/' })
   const current = view ?? 'overview'
-  const section = sections.find((item) => item.id === current) ?? sections[0]
   return (
     <VisoraPage
-      title={section.title}
-      description={section.description}
+      title='访问分析'
+      toolbar={<AnalysisSwitch current={current} />}
       action={
         current === 'overview' ? (
-          <Button asChild>
+          <Button asChild className='h-11 px-3 md:h-8'>
             <Link to='/projects'>
               <Plus className='size-4' />
-              接入项目
+              <span className='max-sm:sr-only'>接入项目</span>
             </Link>
           </Button>
         ) : undefined
       }
     >
-      <AnalysisNav current={current} />
       {current === 'overview' && <OverviewPanel />}
       {current === 'trends' && <VisoraTrends />}
       {current === 'pages' && <VisoraPages />}

@@ -12,7 +12,6 @@ import {
   Play,
   Plus,
   Search,
-  ShieldCheck,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -365,11 +364,10 @@ export function VisoraProjects() {
   return (
     <VisoraPage
       title='项目管理'
-      description='一个工作空间，连接你的所有产品与服务。'
       action={
-        <Button onClick={() => setEditor('new')}>
+        <Button className='h-11 px-3 md:h-8' onClick={() => setEditor('new')}>
           <Plus className='size-4' />
-          新建项目
+          <span className='max-sm:sr-only'>新建项目</span>
         </Button>
       }
     >
@@ -387,7 +385,7 @@ export function VisoraProjects() {
           <Input
             aria-label='搜索项目'
             placeholder='搜索项目或域名…'
-            className='pl-9'
+            className='h-11 pl-9 md:h-9'
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -395,7 +393,7 @@ export function VisoraProjects() {
       </div>
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {isPending && (
-        <div className='grid gap-5 md:grid-cols-2 xl:grid-cols-3'>
+        <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
           {[1, 2, 3].map((n) => (
             <Skeleton key={n} className='h-64 rounded-xl' />
           ))}
@@ -412,9 +410,9 @@ export function VisoraProjects() {
           link={false}
         />
       )}
-      <div className='grid gap-5 md:grid-cols-2 xl:grid-cols-3'>
+      <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
         {projects.map((project) => (
-          <Card key={project.id} className='gap-5 shadow-none'>
+          <Card key={project.id} className='gap-4 py-4 shadow-none'>
             <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3'>
               <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-semibold text-primary'>
                 {project.name.slice(0, 1).toUpperCase()}
@@ -493,24 +491,6 @@ export function VisoraProjects() {
             </CardFooter>
           </Card>
         ))}
-      </div>
-      <div className='flex flex-col items-start gap-3 rounded-xl border bg-muted/30 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5'>
-        <ShieldCheck className='size-6 shrink-0 text-primary' />
-        <div className='min-w-0 flex-1 space-y-1'>
-          <p className='text-sm font-medium'>
-            每个项目独立采集，所有数据统一查看
-          </p>
-          <p className='text-xs leading-5 text-muted-foreground'>
-            浏览器使用公开站点
-            ID，服务端使用独立密钥。暂停后停止接收新事件；删除项目会同时清除它的全部访问记录。
-          </p>
-        </div>
-        <Button variant='outline' className='w-full sm:w-auto' asChild>
-          <Link to='/integrations'>
-            接入指南
-            <ArrowUpRight className='size-4' />
-          </Link>
-        </Button>
       </div>
       {editor && (
         <ProjectEditor

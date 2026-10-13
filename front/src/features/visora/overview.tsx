@@ -5,7 +5,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Eye,
-  Layers,
   MousePointer2,
   Users,
 } from 'lucide-react'
@@ -20,13 +19,7 @@ import {
 } from 'recharts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -45,20 +38,17 @@ function Change({ value, previous }: { value: number; previous: number }) {
   if (!previous)
     return (
       <span className='text-xs text-muted-foreground'>
-        {value ? '上一周期暂无数据' : '等待访问数据'}
+        {value ? '新出现' : '暂无'}
       </span>
     )
   const delta = Math.round(((value - previous) / previous) * 100)
   const Icon = delta >= 0 ? ArrowUpRight : ArrowDownRight
   return (
-    <span className='flex items-center gap-1 text-xs'>
-      <span
-        className={`flex items-center ${delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}
-      >
-        <Icon className='size-3.5' />
-        {Math.abs(delta)}%
-      </span>
-      <span className='text-muted-foreground'>较上一等长周期</span>
+    <span
+      className={`inline-flex items-center text-xs ${delta >= 0 ? 'text-success' : 'text-warning'}`}
+    >
+      <Icon className='size-3.5' />
+      {Math.abs(delta)}%
     </span>
   )
 }
@@ -72,38 +62,39 @@ function RankingList({
   total: number
   emptyLabel?: string
 }) {
+  if (!items.length) {
+    return (
+      <p className='py-8 text-center text-sm text-muted-foreground'>
+        {emptyLabel}
+      </p>
+    )
+  }
   return (
-    <div className='space-y-3'>
-      {items.length ? (
-        items.map((row) => (
+    <div className='flex flex-col gap-1.5'>
+      {items.map((row) => (
+        <div
+          key={row.name}
+          className='relative overflow-hidden rounded-md px-2.5 py-2'
+        >
           <div
-            key={row.name}
-            className='relative overflow-hidden rounded-md px-3 py-2.5'
-          >
-            <div
-              className='absolute inset-y-0 left-0 rounded-md bg-primary/6'
-              style={{
-                width: `${total ? Math.max((row.pv / total) * 100, 2) : 0}%`,
-              }}
-            />
-            <div className='relative flex items-center justify-between gap-4 text-sm'>
-              <span className='truncate' title={row.name}>
-                {row.name || '直接访问'}
+            className='absolute inset-y-0 left-0 rounded-md bg-primary/8'
+            style={{
+              width: `${total ? Math.max((row.pv / total) * 100, 2) : 0}%`,
+            }}
+          />
+          <div className='relative flex items-center justify-between gap-3 text-sm'>
+            <span className='truncate' title={row.name}>
+              {row.name || '直接访问'}
+            </span>
+            <span className='flex shrink-0 items-baseline gap-3 tabular-nums'>
+              <span className='font-medium'>{formatNumber(row.pv)}</span>
+              <span className='w-8 text-right text-xs text-muted-foreground'>
+                {total ? Math.round((row.pv / total) * 100) : 0}%
               </span>
-              <span className='flex shrink-0 gap-5 tabular-nums'>
-                <span className='font-medium'>{formatNumber(row.pv)}</span>
-                <span className='w-10 text-right text-xs text-muted-foreground'>
-                  {total ? Math.round((row.pv / total) * 100) : 0}%
-                </span>
-              </span>
-            </div>
+            </span>
           </div>
-        ))
-      ) : (
-        <p className='py-12 text-center text-sm text-muted-foreground'>
-          {emptyLabel}
-        </p>
-      )}
+        </div>
+      ))}
     </div>
   )
 }
@@ -125,21 +116,21 @@ export function OverviewPanel() {
           icon: Eye,
         },
         {
-          label: '独立访客',
+          label: '访客',
           unit: 'UV',
           value: data.totals.uv,
           previous: data.previous.uv,
           icon: Users,
         },
         {
-          label: '访问会话',
+          label: '会话',
           unit: 'Sessions',
           value: data.totals.sessions,
           previous: data.previous.sessions,
           icon: MousePointer2,
         },
         {
-          label: '活跃访客',
+          label: '实时',
           unit: 'Live',
           value: data.active,
           previous: 0,
@@ -148,332 +139,300 @@ export function OverviewPanel() {
       ]
     : []
   return (
-    <>
+    <div className='flex flex-col gap-3'>
       <AnalyticsFilters refresh={() => void refetch()} fetching={isFetching} />
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {isPending && (
-        <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
-          {[1, 2, 3, 4].map((n) => (
-            <Skeleton key={n} className='h-36 rounded-xl' />
+        <div className='grid grid-cols-2 gap-2 md:grid-cols-4'>
+          {[1, 2, 3, 4].map((item) => (
+            <Skeleton key={item} className='h-16 rounded-xl' />
           ))}
         </div>
       )}
       {data && (
-        <>
-          <div className='grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4'>
+        <div className='grid gap-3 xl:grid-cols-12'>
+          <section className='grid grid-cols-2 gap-2 md:grid-cols-4 xl:col-span-12'>
             {metrics.map((metric) => (
-              <Card key={metric.unit} className='gap-4 shadow-none'>
-                <CardHeader className='flex flex-row items-center justify-between pb-0'>
-                  <CardTitle className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-muted-foreground sm:text-sm'>
-                    {metric.label}
-                    <span className='text-[11px] font-normal tracking-wide opacity-70'>
-                      {metric.unit}
+              <Card key={metric.unit} className='gap-1 py-3 shadow-none'>
+                <CardHeader className='px-3 pb-0'>
+                  <CardTitle className='flex items-center justify-between text-xs font-medium text-muted-foreground'>
+                    <span className='inline-flex items-center gap-1.5'>
+                      <metric.icon className='size-3.5 text-primary' />
+                      {metric.label}
                     </span>
+                    <span className='font-normal'>{metric.unit}</span>
                   </CardTitle>
-                  <metric.icon className='size-4 text-primary/65' />
                 </CardHeader>
-                <CardContent>
-                  <div className='mb-3 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl'>
+                <CardContent className='flex items-end justify-between gap-2 px-3'>
+                  <p className='text-xl font-semibold tabular-nums sm:text-2xl'>
                     {formatNumber(metric.value)}
                     {metric.unit === 'Live' && (
-                      <span className='ml-3 inline-block size-2 rounded-full bg-emerald-500 align-middle' />
+                      <span className='ml-2 inline-block size-2 rounded-full bg-success align-middle' />
                     )}
-                  </div>
+                  </p>
                   {metric.unit === 'Live' ? (
-                    <p className='text-xs text-muted-foreground'>
-                      最近 5 分钟产生事件的访客 · 每 30 秒更新
-                    </p>
+                    <span className='pb-1 text-[11px] text-muted-foreground'>
+                      5 分钟
+                    </span>
                   ) : (
                     <Change value={metric.value} previous={metric.previous} />
                   )}
                 </CardContent>
               </Card>
             ))}
-          </div>
-          {!data.projects.length && <EmptyState />}
-          <Card className='shadow-none'>
-            <CardHeader className='flex flex-row flex-wrap items-center justify-between gap-3'>
-              <div className='space-y-2'>
-                <CardTitle className='text-base'>访问趋势</CardTitle>
-                <CardDescription>
-                  观察流量变化，了解项目的每一天。
-                  <Link
-                    to='/'
-                    search={{ view: 'trends' }}
-                    className='ml-2 text-primary'
+          </section>
+
+          {!data.projects.length ? (
+            <div className='xl:col-span-12'>
+              <EmptyState />
+            </div>
+          ) : (
+            <>
+              <Card className='gap-3 py-4 shadow-none xl:col-span-8'>
+                <CardHeader className='flex flex-row items-center justify-between gap-3 px-4'>
+                  <CardTitle className='text-sm'>趋势</CardTitle>
+                  <div className='flex items-center gap-3 text-xs text-muted-foreground'>
+                    <span className='inline-flex items-center gap-1.5'>
+                      <i className='size-2 rounded-full bg-chart-1' />
+                      PV
+                    </span>
+                    <span className='inline-flex items-center gap-1.5'>
+                      <i className='size-2 rounded-full bg-chart-2' />
+                      UV
+                    </span>
+                    <Link
+                      to='/'
+                      search={{ view: 'trends' }}
+                      className='text-primary'
+                    >
+                      下钻
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className='px-2 pb-2'>
+                  <div
+                    className='h-52 w-full min-w-0 sm:h-64'
+                    aria-label='每日浏览量和独立访客趋势图'
                   >
-                    打开柱状图并下钻
-                  </Link>
-                </CardDescription>
-              </div>
-              <div className='flex gap-5 text-xs text-muted-foreground'>
-                <span className='flex items-center gap-2'>
-                  <i className='size-2 rounded-full bg-indigo-500' />
-                  浏览量
-                </span>
-                <span className='flex items-center gap-2'>
-                  <i className='size-2 rounded-full bg-teal-500' />
-                  独立访客
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent className='px-2 pb-2 sm:px-6'>
-              <div
-                className='h-56 w-full min-w-0 sm:h-72'
-                aria-label='每日浏览量和独立访客趋势图'
-              >
-                <ResponsiveContainer width='100%' height='100%'>
-                  <AreaChart
-                    data={data.trend}
-                    margin={{ top: 8, right: 8, left: 0, bottom: 4 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id='visora-pv'
-                        x1='0'
-                        y1='0'
-                        x2='0'
-                        y2='1'
+                    <ResponsiveContainer width='100%' height='100%'>
+                      <AreaChart
+                        data={data.trend}
+                        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                       >
-                        <stop
-                          offset='0%'
-                          stopColor='#6366f1'
-                          stopOpacity={0.18}
+                        <defs>
+                          <linearGradient
+                            id='visora-pv'
+                            x1='0'
+                            y1='0'
+                            x2='0'
+                            y2='1'
+                          >
+                            <stop
+                              offset='0%'
+                              stopColor='var(--chart-1)'
+                              stopOpacity={0.22}
+                            />
+                            <stop
+                              offset='100%'
+                              stopColor='var(--chart-1)'
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray='3 5'
+                          vertical={false}
+                          stroke='var(--border)'
                         />
-                        <stop
-                          offset='100%'
-                          stopColor='#6366f1'
-                          stopOpacity={0}
+                        <XAxis
+                          dataKey='date'
+                          tickFormatter={(value: string) =>
+                            value.slice(5).replace('-', '/')
+                          }
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{
+                            fill: 'var(--muted-foreground)',
+                            fontSize: 11,
+                          }}
+                          minTickGap={28}
                         />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray='3 5'
-                      vertical={false}
-                      stroke='var(--border)'
-                    />
-                    <XAxis
-                      dataKey='date'
-                      tickFormatter={(v: string) =>
-                        v.slice(5).replace('-', '/')
-                      }
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                      minTickGap={30}
-                      dy={8}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      allowDecimals={false}
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: 10,
-                        border: '1px solid var(--border)',
-                        background: 'var(--card)',
-                        color: 'var(--foreground)',
-                        fontSize: 12,
-                      }}
-                      labelFormatter={(value) => `${String(value)} · 上海时间`}
-                    />
-                    <Area
-                      isAnimationActive={false}
-                      type='monotone'
-                      dataKey='pv'
-                      name='浏览量 PV'
-                      stroke='#6366f1'
-                      strokeWidth={2.5}
-                      fill='url(#visora-pv)'
-                      dot={data.trend.length === 1}
-                    />
-                    <Area
-                      isAnimationActive={false}
-                      type='monotone'
-                      dataKey='uv'
-                      name='独立访客 UV'
-                      stroke='#14b8a6'
-                      strokeWidth={2}
-                      fill='transparent'
-                      dot={data.trend.length === 1}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <div className='grid gap-5 lg:grid-cols-2'>
-            <Card className='shadow-none'>
-              <CardHeader className='flex flex-row items-center justify-between'>
-                <CardTitle className='text-base'>热门页面</CardTitle>
-                <span className='text-xs text-muted-foreground'>
-                  浏览量 / 占比
-                </span>
-              </CardHeader>
-              <CardContent>
-                <RankingList
-                  items={data.dimensions.path}
-                  total={data.totals.pv}
-                />
-              </CardContent>
-            </Card>
-            <Card className='shadow-none'>
-              <CardHeader className='flex flex-row items-center justify-between'>
-                <CardTitle className='text-base'>访问来源</CardTitle>
-                <span className='text-xs text-muted-foreground'>
-                  浏览量 / 占比
-                </span>
-              </CardHeader>
-              <CardContent>
-                <RankingList
-                  items={data.dimensions.referrer}
-                  total={data.totals.pv}
-                />
-              </CardContent>
-            </Card>
-          </div>
-          <Card className='gap-4 shadow-none'>
-            <CardHeader className='flex flex-row items-center justify-between'>
-              <div className='space-y-2'>
-                <CardTitle className='text-base'>项目表现</CardTitle>
-                <CardDescription>
-                  所选日期内的项目流量，按浏览量排序。
-                </CardDescription>
-              </div>
-              <Layers className='size-4 text-muted-foreground' />
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>项目</TableHead>
-                    <TableHead>采集状态</TableHead>
-                    <TableHead className='text-right'>浏览量</TableHead>
-                    <TableHead className='text-right'>访客</TableHead>
-                    <TableHead className='hidden text-right sm:table-cell'>
-                      最近访问（上海时间）
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.projects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell className='font-medium'>
-                        {project.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant='outline'
-                          className='gap-1.5 font-normal'
-                        >
-                          <span
-                            className={`size-1.5 rounded-full ${project.enabled ? 'bg-emerald-500' : 'bg-slate-400'}`}
-                          />
-                          {project.enabled ? '已启用' : '已暂停'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className='text-right tabular-nums'>
-                        {formatNumber(project.pv)}
-                      </TableCell>
-                      <TableCell className='text-right tabular-nums'>
-                        {formatNumber(project.uv)}
-                      </TableCell>
-                      <TableCell className='hidden text-right text-xs text-muted-foreground sm:table-cell'>
-                        {formatTime(project.last_event)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!data.projects.length && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className='h-20 text-center text-muted-foreground'
-                      >
-                        还没有接入项目
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          <div className='grid gap-5 lg:grid-cols-2'>
-            <Card className='shadow-none'>
-              <CardHeader>
-                <CardTitle className='text-base'>访客环境</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue='browser'>
-                  <TabsList className='mb-4'>
-                    <TabsTrigger value='browser'>浏览器</TabsTrigger>
-                    <TabsTrigger value='device'>设备</TabsTrigger>
-                    <TabsTrigger value='os'>操作系统</TabsTrigger>
-                    <TabsTrigger value='language'>语言</TabsTrigger>
-                  </TabsList>
-                  {(['browser', 'device', 'os', 'language'] as const).map(
-                    (key) => (
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                          width={32}
+                          tick={{
+                            fill: 'var(--muted-foreground)',
+                            fontSize: 11,
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: 10,
+                            border: '1px solid var(--border)',
+                            background: 'var(--card)',
+                            color: 'var(--foreground)',
+                            fontSize: 12,
+                          }}
+                          labelFormatter={(value) =>
+                            `${String(value)} · 上海时间`
+                          }
+                        />
+                        <Area
+                          isAnimationActive={false}
+                          type='monotone'
+                          dataKey='pv'
+                          name='浏览量 PV'
+                          stroke='var(--chart-1)'
+                          strokeWidth={2}
+                          fill='url(#visora-pv)'
+                          dot={data.trend.length === 1}
+                        />
+                        <Area
+                          isAnimationActive={false}
+                          type='monotone'
+                          dataKey='uv'
+                          name='独立访客 UV'
+                          stroke='var(--chart-2)'
+                          strokeWidth={2}
+                          fill='transparent'
+                          dot={data.trend.length === 1}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className='gap-3 py-4 shadow-none xl:col-span-4'>
+                <CardContent className='px-4'>
+                  <Tabs defaultValue='path'>
+                    <TabsList className='w-full'>
+                      <TabsTrigger value='path' className='min-h-9'>
+                        页面
+                      </TabsTrigger>
+                      <TabsTrigger value='referrer' className='min-h-9'>
+                        来源
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value='path'>
+                      <RankingList
+                        items={data.dimensions.path}
+                        total={data.totals.pv}
+                      />
+                    </TabsContent>
+                    <TabsContent value='referrer'>
+                      <RankingList
+                        items={data.dimensions.referrer}
+                        total={data.totals.pv}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+
+              <Card className='gap-3 py-4 shadow-none xl:col-span-7'>
+                <CardHeader className='px-4'>
+                  <CardTitle className='text-sm'>项目</CardTitle>
+                </CardHeader>
+                <CardContent className='px-2 sm:px-4'>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>项目</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead className='text-right'>PV</TableHead>
+                        <TableHead className='text-right'>UV</TableHead>
+                        <TableHead className='hidden text-right md:table-cell'>
+                          最近访问
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.projects.map((project) => (
+                        <TableRow key={project.id}>
+                          <TableCell className='max-w-40 truncate font-medium'>
+                            {project.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant='outline'
+                              className='gap-1.5 font-normal'
+                            >
+                              <span
+                                className={`size-1.5 rounded-full ${project.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                              />
+                              {project.enabled ? '启用' : '暂停'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className='text-right tabular-nums'>
+                            {formatNumber(project.pv)}
+                          </TableCell>
+                          <TableCell className='text-right tabular-nums'>
+                            {formatNumber(project.uv)}
+                          </TableCell>
+                          <TableCell className='hidden text-right text-xs text-muted-foreground md:table-cell'>
+                            {formatTime(project.last_event)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              <Card className='gap-3 py-4 shadow-none xl:col-span-5'>
+                <CardContent className='px-4'>
+                  <Tabs defaultValue='browser'>
+                    <TabsList className='w-full'>
+                      <TabsTrigger value='browser'>浏览器</TabsTrigger>
+                      <TabsTrigger value='device'>设备</TabsTrigger>
+                      <TabsTrigger value='os'>系统</TabsTrigger>
+                      <TabsTrigger value='events'>事件</TabsTrigger>
+                    </TabsList>
+                    {(['browser', 'device', 'os'] as const).map((key) => (
                       <TabsContent key={key} value={key}>
                         <RankingList
                           items={data.dimensions[key]}
                           total={data.totals.pv}
                         />
                       </TabsContent>
-                    )
-                  )}
-                </Tabs>
-              </CardContent>
-            </Card>
-            <Card className='shadow-none'>
-              <CardHeader className='flex flex-row items-center justify-between'>
-                <CardTitle className='text-base'>自定义事件</CardTitle>
-                <Badge variant='secondary'>
-                  {formatNumber(data.totals.events)} 次
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                {data.customEvents.length ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>事件名称</TableHead>
-                        <TableHead className='text-right'>触发次数</TableHead>
-                        <TableHead className='text-right'>访客数</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.customEvents.map((event) => (
-                        <TableRow key={event.name}>
-                          <TableCell>{event.name}</TableCell>
-                          <TableCell className='text-right'>
-                            {formatNumber(event.count)}
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            {formatNumber(event.visitors)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className='py-10 text-center'>
-                    <p className='text-sm text-muted-foreground'>
-                      记录注册、点击、任务完成等关键行为
-                    </p>
-                    <Button variant='link' asChild className='mt-2'>
-                      <Link to='/integrations'>
-                        查看自定义事件接入
-                        <ArrowUpRight className='size-4' />
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </>
+                    ))}
+                    <TabsContent value='events'>
+                      {data.customEvents.length ? (
+                        <div className='flex flex-col gap-1.5'>
+                          {data.customEvents.map((event) => (
+                            <div
+                              key={event.name}
+                              className='flex items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm'
+                            >
+                              <span className='truncate'>{event.name}</span>
+                              <span className='shrink-0 text-muted-foreground tabular-nums'>
+                                {formatNumber(event.count)} 次 ·{' '}
+                                {formatNumber(event.visitors)} 人
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className='flex flex-col items-center gap-2 py-8 text-center'>
+                          <p className='text-sm text-muted-foreground'>
+                            还没有自定义事件
+                          </p>
+                          <Button variant='link' asChild>
+                            <Link to='/integrations'>查看接入</Link>
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
       )}
-    </>
+    </div>
   )
 }
