@@ -14,7 +14,6 @@ import {
 import {
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
   ResponsiveContainer,
   Tooltip,
@@ -118,11 +117,6 @@ function ClickableBars({
     <div className='h-56 w-full min-w-0 sm:h-72' role='img' aria-label={label}>
       <ResponsiveContainer width='100%' height='100%'>
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-          <CartesianGrid
-            strokeDasharray='3 5'
-            vertical={false}
-            stroke='var(--border)'
-          />
           <XAxis
             dataKey='label'
             tickLine={false}

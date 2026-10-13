@@ -13,7 +13,6 @@ import {
 import {
   Area,
   AreaChart,
-  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -252,11 +251,6 @@ export function OverviewPanel() {
                             />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid
-                          strokeDasharray='3 5'
-                          vertical={false}
-                          stroke='var(--border)'
-                        />
                         <XAxis
                           dataKey='date'
                           tickFormatter={(value: string) =>
