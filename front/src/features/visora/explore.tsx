@@ -532,7 +532,10 @@ export function VisoraTrends() {
               size='sm'
               className='min-h-11 xl:min-h-8'
               onClick={() => {
-                setFilter({ ...filter, from: activeDate, to: activeDate })
+                setFilter(
+                  { ...filter, from: activeDate, to: activeDate },
+                  'detail'
+                )
                 void navigate({ to: '/events' })
               }}
             >

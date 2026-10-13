@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouterState } from '@tanstack/react-router'
 import {
   CalendarDays,
   Download,
@@ -33,34 +34,75 @@ const date = (offset = 0) =>
   new Date(Date.now() + offset * 86400000 + 8 * 3600000)
     .toISOString()
     .slice(0, 10)
-type Filter = {
+type DateRange = { from: string; to: string }
+type FilterScope = 'analytics' | 'detail'
+type Filter = DateRange & {
   project: string
-  from: string
-  to: string
   userId: string
   ip: string
 }
+type FilterState = {
+  project: string
+  userId: string
+  ip: string
+  analytics: DateRange
+  detail: DateRange
+}
 const FilterContext = createContext<{
-  filter: Filter
-  setFilter: (filter: Filter) => void
+  state: FilterState
+  setState: (state: FilterState) => void
 } | null>(null)
 
+const todayRange = (): DateRange => {
+  const today = date()
+  return { from: today, to: today }
+}
+
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
-  const [filter, setFilter] = useState<Filter>(() => {
-    const today = date()
-    return { project: 'all', userId: '', ip: '', from: today, to: today }
-  })
-  return <FilterContext value={{ filter, setFilter }}>{children}</FilterContext>
+  const [state, setState] = useState<FilterState>(() => ({
+    project: 'all',
+    userId: '',
+    ip: '',
+    analytics: { from: date(1 - 7), to: date() },
+    detail: todayRange(),
+  }))
+  return <FilterContext value={{ state, setState }}>{children}</FilterContext>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAnalyticsFilter() {
   const context = useContext(FilterContext)
   if (!context) throw new Error('AnalyticsProvider is required')
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const scope: FilterScope = pathname === '/' ? 'analytics' : 'detail'
+  const filter: Filter = {
+    project: context.state.project,
+    userId: context.state.userId,
+    ip: context.state.ip,
+    ...context.state[scope],
+  }
+  const setFilter = (next: Filter, target: FilterScope = scope) => {
+    context.setState({
+      project: next.project,
+      userId: next.userId,
+      ip: next.ip,
+      analytics:
+        target === 'analytics'
+          ? { from: next.from, to: next.to }
+          : context.state.analytics,
+      detail:
+        target === 'detail'
+          ? { from: next.from, to: next.to }
+          : context.state.detail,
+    })
+  }
   return {
-    ...context,
+    filter,
+    setFilter,
     query: new URLSearchParams({
-      ...context.filter,
+      ...filter,
       timezone: 'Asia/Shanghai',
     }).toString(),
   }
