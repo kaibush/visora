@@ -1,6 +1,68 @@
 # Visora
 
-一个自托管的通用访问统计平台。基于 shadcn-admin 的 React 管理界面，将 new-api、grok-iq 及其他系统的访问数据汇聚到同一个工作空间。
+自托管的通用访问统计。把多个网站的页面访问、操作行为和登录用户汇到同一个工作空间，不必再为每个系统单独做统计库和管理后台。
+
+<p align="center">
+  <img src="docs/images/overview.png" alt="访问概览：最近 7 天的浏览量、访客、趋势和热门页面" width="100%">
+</p>
+
+界面按上海时区统计。访问概览默认看最近 7 天，访问明细、用户列表和导出默认今天，也可以改成最近 30 天或自定义日期。
+
+[![Node.js](https://img.shields.io/badge/Node.js-24%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Fastify](https://img.shields.io/badge/Fastify-API-000000?logo=fastify&logoColor=white)](https://fastify.dev/)
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+
+## 功能
+
+- **多项目**：每个系统有独立的站点 ID、来源白名单和密钥，可以单独暂停、恢复或删除。
+- **自动采集**：一段脚本统计首屏和 SPA 路由，并记录点击、变更、提交尝试。
+- **登录用户**：各项目按自己的对象字段上报 ID、名称和邮箱；同一个 ID 不会跨项目合并。
+- **热门用户和 IP**：按浏览量排行，点进去就能看对应的访问明细。
+- **大模型接入**：为每个项目生成可复制的提示词，交给任意大模型即可按该项目接入。
+- **自托管**：Node.js 24、Fastify 和 React。默认 SQLite，也可以换成 PostgreSQL 或 MySQL。
+
+## 界面
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/events.png" alt="访问明细，展示用户、IP、页面和浏览器">
+      <br>
+      <sub>访问明细。默认今天，可按项目、用户和 IP 筛选，并导出 CSV。</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/images/users.png" alt="用户列表，展示热门用户和热门 IP">
+      <br>
+      <sub>用户列表。热门用户与热门 IP 按浏览量排序，点击可下钻到明细。</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/projects.png" alt="项目管理，展示来源、事件量和操作">
+      <br>
+      <sub>项目管理。每个卡片对应一个业务系统，密钥可随时查看和轮换。</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/images/prompts.png" alt="大模型接入，按项目填写用户字段并复制提示词">
+      <br>
+      <sub>大模型接入。用户字段按项目保存，提示词里已经带上站点 ID 和来源。</sub>
+    </td>
+  </tr>
+</table>
+
+上面的截图使用示例项目和虚构访问记录，不包含真实用户数据。
+
+## 目录
+
+- [通用化方案](#通用化方案)
+- [本地运行](#本地运行)
+- [数据库选择与迁移](#数据库选择与迁移)
+- [Docker](#docker)
+- [最简单接入](#最简单接入一段脚本自动采集推荐)
+- [关联登录用户](#关联业务系统的登录用户)
+- [服务端事件协议](#服务端事件协议)
+- [统计口径与运维边界](#统计口径与运维边界)
+- [验证](#验证)
 
 ## 通用化方案
 
@@ -15,7 +77,7 @@ Go / Python / Node  ── JSON HTTP ──→ 服务端采集接口（项目独
 
 每个系统只负责发送统一的事件，无需再实现统计数据库、聚合逻辑、图表和管理页面。项目有独立站点 ID、来源白名单和密钥，可以单独暂停、恢复或删除。删除会同时清除该项目的访问记录。看板支持全部项目与单项目筛选。
 
-已实现：首次创建唯一管理员、管理登录、项目创建/编辑/删除、密钥查看/复制与轮换、网页 SPA 与控件交互自动采集、匿名访客 IP、批量服务端采集、幂等去重、PV/UV/会话、最近 5 分钟活跃访客、按天趋势、页面/来源/设备/浏览器/系统/语言排行、自定义事件、业务用户身份上报与筛选、访问明细分页、CSV 导出和自动清理。
+已实现：首次创建唯一管理员、管理登录、项目创建/编辑/删除、密钥查看/复制与轮换、网页 SPA 与控件交互自动采集、匿名访客 IP、批量服务端采集、幂等去重、PV/UV/会话、最近 5 分钟活跃访客、按天趋势、页面/来源/设备/浏览器/系统/语言排行、自定义事件、业务用户身份上报与筛选、访问明细分页、CSV 导出、用户列表、热门用户与 IP、按项目生成的大模型接入提示词和自动清理。
 
 后端使用 Node.js 24 + Fastify + Sequelize ORM，按业务模块划分 routes / services / repositories。默认 SQLite WAL，适合个人项目、单实例部署与中小流量；可通过配置选择 PostgreSQL 或 MySQL。前端使用 React、TypeScript、TanStack Query/Router、shadcn/ui、Recharts。默认部署无需外部数据库、Redis 或 SaaS。未实现组织多租户、跨站身份拼接、地理定位或任意旧数据库自动同步。
 
@@ -289,4 +351,4 @@ pnpm test:e2e                   # 跨域脚本、SPA、用户身份切换、看�
 
 前端基于 [shadcn-admin](https://github.com/satnaing/shadcn-admin)，原 MIT 许可见 `front/LICENSE`。
 
-看板、访问明细及导出默认查看今天的数据，可手动切换最近 7 天、最近 30 天或自定义日期。看板默认使用 Asia/Shanghai（UTC+8），日期边界与 CSV 时间一致。分析 API 未指定日期时也默认今天，可传 `timezone=Asia/Shanghai`；省略时保留 UTC 口径以兼容既有调用。访问明细的「详情」提供完整控件位置、访客和会话标识及用途说明。
+访问概览默认最近 7 天；访问明细、用户列表及导出默认今天。均可切换最近 30 天或自定义日期。界面按 Asia/Shanghai（UTC+8）划分日期，与 CSV 时间一致。分析 API 未指定日期时也默认今天，可传 `timezone=Asia/Shanghai`；省略时保留 UTC 口径以兼容既有调用。访问明细的「详情」提供完整控件位置、访客和会话标识及用途说明。
