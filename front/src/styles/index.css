@@ -119,6 +119,17 @@
   }
 }
 
+/* Recharts focuses the chart surface on click. The base outline color then
+   draws a box around every bar chart; selection is shown on the bars instead. */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

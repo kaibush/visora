@@ -98,6 +98,34 @@ function useSeries(dimension: string, value: string | null) {
   })
 }
 
+const barGap = 4
+
+function CategoryTick({
+  x,
+  y,
+  value,
+  active,
+}: {
+  x: number | string
+  y: number | string
+  value?: string | number
+  active: boolean
+}) {
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={12}
+      textAnchor='middle'
+      fill={active ? 'var(--foreground)' : 'var(--muted-foreground)'}
+      fontSize={11}
+      fontWeight={active ? 700 : 400}
+    >
+      {value}
+    </text>
+  )
+}
+
 function ClickableBars({
   data,
   selected,
@@ -113,16 +141,54 @@ function ClickableBars({
   visitorLabel: string
   label: string
 }) {
+  const hasSelection = selected != null && selected !== ''
+  const selectedLabel = hasSelection
+    ? data.find((point) => point.key === selected)?.label
+    : undefined
+  const choose = (bar: { payload?: { key?: unknown } }) => {
+    const key = bar.payload?.key
+    if (onSelect && typeof key === 'string') onSelect(key)
+  }
+  const cells = (color: string) =>
+    data.map((point) => {
+      const active = hasSelection && point.key === selected
+      return (
+        <Cell
+          key={point.key}
+          fill={color}
+          fillOpacity={!hasSelection || active ? 1 : 0.2}
+          stroke={active ? 'var(--foreground)' : 'none'}
+          strokeWidth={active ? 2 : 0}
+        />
+      )
+    })
+
   return (
-    <div className='h-56 w-full min-w-0 sm:h-72' role='img' aria-label={label}>
+    <div
+      className='h-56 w-full min-w-0 sm:h-72'
+      role='img'
+      aria-label={selectedLabel ? `${label}，已选中 ${selectedLabel}` : label}
+    >
       <ResponsiveContainer width='100%' height='100%'>
-        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+        <BarChart
+          data={data}
+          barGap={barGap}
+          margin={{ top: 8, right: 8, left: 0, bottom: 4 }}
+          accessibilityLayer={false}
+        >
           <XAxis
             dataKey='label'
             tickLine={false}
             axisLine={false}
             interval={data.length > 16 ? 'equidistantPreserveStart' : 0}
-            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+            tick={(tick) => (
+              <CategoryTick
+                x={tick.x}
+                y={tick.y}
+                value={tick.payload?.value}
+                active={hasSelection && tick.payload?.value === selectedLabel}
+              />
+            )}
           />
           <YAxis
             allowDecimals={false}
@@ -148,19 +214,33 @@ function ClickableBars({
             radius={[4, 4, 0, 0]}
             minPointSize={onSelect ? 3 : 0}
             cursor={onSelect ? 'pointer' : undefined}
-            onClick={(bar) => {
-              const key = bar.payload?.key
-              if (onSelect && typeof key === 'string') onSelect(key)
+            activeBar={false}
+            background={(bar) => {
+              const point = bar.payload as BarPoint | undefined
+              if (
+                !hasSelection ||
+                point?.key !== selected ||
+                !Number.isFinite(bar.width) ||
+                !Number.isFinite(bar.height)
+              ) {
+                return null
+              }
+              const pad = 3
+              return (
+                <rect
+                  x={bar.x - pad}
+                  y={bar.y}
+                  width={bar.width * 2 + barGap + pad * 2}
+                  height={bar.height}
+                  fill='var(--primary)'
+                  fillOpacity={0.18}
+                  rx={6}
+                />
+              )
             }}
+            onClick={choose}
           >
-            {data.map((point) => (
-              <Cell
-                key={point.key}
-                fill={
-                  point.key === selected ? 'var(--chart-5)' : 'var(--chart-1)'
-                }
-              />
-            ))}
+            {cells('var(--chart-1)')}
           </Bar>
           <Bar
             dataKey='visitors'
@@ -169,11 +249,11 @@ function ClickableBars({
             radius={[4, 4, 0, 0]}
             minPointSize={onSelect ? 3 : 0}
             cursor={onSelect ? 'pointer' : undefined}
-            onClick={(bar) => {
-              const key = bar.payload?.key
-              if (onSelect && typeof key === 'string') onSelect(key)
-            }}
-          />
+            activeBar={false}
+            onClick={choose}
+          >
+            {cells('var(--chart-2)')}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
