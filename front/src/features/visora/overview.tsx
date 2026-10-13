@@ -5,6 +5,8 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Eye,
+  FolderKanban,
+  ChartNoAxesCombined,
   MousePointer2,
   Users,
 } from 'lucide-react'
@@ -33,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { api, formatNumber, formatTime, type Ranking, type Report } from './api'
 import { AnalyticsFilters, useAnalyticsFilter } from './filter'
 import { EmptyState, ErrorState } from './shared'
+import { IconBadge, PanelTitle } from './visuals'
 
 function Change({ value, previous }: { value: number; previous: number }) {
   if (!previous)
@@ -114,6 +117,7 @@ export function OverviewPanel() {
           value: data.totals.pv,
           previous: data.previous.pv,
           icon: Eye,
+          tone: 'info' as const,
         },
         {
           label: '访客',
@@ -121,6 +125,7 @@ export function OverviewPanel() {
           value: data.totals.uv,
           previous: data.previous.uv,
           icon: Users,
+          tone: 'violet' as const,
         },
         {
           label: '会话',
@@ -128,6 +133,7 @@ export function OverviewPanel() {
           value: data.totals.sessions,
           previous: data.previous.sessions,
           icon: MousePointer2,
+          tone: 'amber' as const,
         },
         {
           label: '实时',
@@ -135,6 +141,7 @@ export function OverviewPanel() {
           value: data.active,
           previous: 0,
           icon: Activity,
+          tone: 'teal' as const,
         },
       ]
     : []
@@ -153,18 +160,22 @@ export function OverviewPanel() {
         <div className='grid gap-3 xl:grid-cols-12'>
           <section className='grid grid-cols-2 gap-2 md:grid-cols-4 xl:col-span-12'>
             {metrics.map((metric) => (
-              <Card key={metric.unit} className='gap-1 py-3 shadow-none'>
+              <Card key={metric.unit} tone={metric.tone} className='gap-3 py-4'>
                 <CardHeader className='px-3 pb-0'>
                   <CardTitle className='flex items-center justify-between text-xs font-medium text-muted-foreground'>
                     <span className='inline-flex items-center gap-1.5'>
-                      <metric.icon className='size-3.5 text-primary' />
+                      <IconBadge
+                        icon={metric.icon}
+                        tone={metric.tone}
+                        size='sm'
+                      />
                       {metric.label}
                     </span>
                     <span className='font-normal'>{metric.unit}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className='flex items-end justify-between gap-2 px-3'>
-                  <p className='text-xl font-semibold tabular-nums sm:text-2xl'>
+                  <p className='text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl'>
                     {formatNumber(metric.value)}
                     {metric.unit === 'Live' && (
                       <span className='ml-2 inline-block size-2 rounded-full bg-success align-middle' />
@@ -188,9 +199,11 @@ export function OverviewPanel() {
             </div>
           ) : (
             <>
-              <Card className='gap-3 py-4 shadow-none xl:col-span-8'>
+              <Card className='gap-3 py-4 xl:col-span-8'>
                 <CardHeader className='flex flex-row items-center justify-between gap-3 px-4'>
-                  <CardTitle className='text-sm'>趋势</CardTitle>
+                  <CardTitle className='text-sm'>
+                    <PanelTitle icon={ChartNoAxesCombined}>访问趋势</PanelTitle>
+                  </CardTitle>
                   <div className='flex items-center gap-3 text-xs text-muted-foreground'>
                     <span className='inline-flex items-center gap-1.5'>
                       <i className='size-2 rounded-full bg-chart-1' />
@@ -203,7 +216,7 @@ export function OverviewPanel() {
                     <Link
                       to='/'
                       search={{ view: 'trends' }}
-                      className='text-primary'
+                      className='font-medium text-info'
                     >
                       下钻
                     </Link>
@@ -305,7 +318,7 @@ export function OverviewPanel() {
                 </CardContent>
               </Card>
 
-              <Card className='gap-3 py-4 shadow-none xl:col-span-4'>
+              <Card className='gap-3 py-4 xl:col-span-4'>
                 <CardContent className='px-4'>
                   <Tabs defaultValue='path'>
                     <TabsList className='w-full'>
@@ -332,9 +345,13 @@ export function OverviewPanel() {
                 </CardContent>
               </Card>
 
-              <Card className='gap-3 py-4 shadow-none xl:col-span-7'>
+              <Card className='gap-3 py-4 xl:col-span-7'>
                 <CardHeader className='px-4'>
-                  <CardTitle className='text-sm'>项目</CardTitle>
+                  <CardTitle className='text-sm'>
+                    <PanelTitle icon={FolderKanban} tone='teal'>
+                      项目表现
+                    </PanelTitle>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className='px-2 sm:px-4'>
                   <Table>
@@ -357,7 +374,9 @@ export function OverviewPanel() {
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant='outline'
+                              variant={
+                                project.enabled ? 'success' : 'secondary'
+                              }
                               className='gap-1.5 font-normal'
                             >
                               <span
@@ -382,7 +401,7 @@ export function OverviewPanel() {
                 </CardContent>
               </Card>
 
-              <Card className='gap-3 py-4 shadow-none xl:col-span-5'>
+              <Card className='gap-3 py-4 xl:col-span-5'>
                 <CardContent className='px-4'>
                   <Tabs defaultValue='browser'>
                     <TabsList className='w-full'>

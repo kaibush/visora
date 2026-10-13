@@ -2,6 +2,16 @@ import { useState } from 'react'
 import { useQuery, useQueryClient, useIsFetching } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  ChartNoAxesCombined,
+  FileText,
+  Globe2,
+  Monitor,
+  MousePointer2,
+  Users,
+  UserRoundCheck,
+  type LucideIcon,
+} from 'lucide-react'
+import {
   Bar,
   BarChart,
   CartesianGrid,
@@ -34,6 +44,18 @@ import {
 import { AnalyticsFilters, useAnalyticsFilter } from './filter'
 import { ErrorState } from './shared'
 import { useMinWidth } from './use-min-width'
+import { PanelTitle } from './visuals'
+
+const dimensionIcons: Record<string, LucideIcon> = {
+  path: FileText,
+  referrer: Globe2,
+  device: Monitor,
+  browser: Globe2,
+  os: Monitor,
+  language: Globe2,
+  action: MousePointer2,
+  event: MousePointer2,
+}
 
 type Companion = { dimension: string; title: string }
 type BarPoint = { key: string; label: string; count: number; visitors: number }
@@ -369,9 +391,16 @@ function DimensionExplorer({
   return (
     <>
       <div className='grid items-start gap-3 xl:grid-cols-2'>
-        <Card className='gap-3 py-4 shadow-none'>
+        <Card className='gap-3 py-4'>
           <CardHeader className='px-4'>
-            <CardTitle className='text-sm'>{rankTitle}</CardTitle>
+            <CardTitle className='text-sm'>
+              <PanelTitle
+                icon={dimensionIcons[dimension] || ChartNoAxesCombined}
+                tone='violet'
+              >
+                {rankTitle}
+              </PanelTitle>
+            </CardTitle>
           </CardHeader>
           <CardContent className='px-3'>
             {breakdown.isPending && <Skeleton className='h-52 rounded-lg' />}
@@ -392,7 +421,7 @@ function DimensionExplorer({
           </CardContent>
         </Card>
         {desktop ? (
-          <Card className='gap-3 py-4 shadow-none'>
+          <Card className='gap-3 py-4'>
             <CardContent className='px-4'>{detail}</CardContent>
           </Card>
         ) : (
@@ -566,9 +595,11 @@ export function VisoraTrends() {
       {report.isPending && <Skeleton className='h-64 rounded-xl' />}
       {report.data && (
         <div className='grid items-stretch gap-3 xl:grid-cols-5'>
-          <Card className='gap-3 py-4 shadow-none xl:col-span-3'>
+          <Card className='gap-3 py-4 xl:col-span-3'>
             <CardHeader className='flex flex-row items-center justify-between px-4'>
-              <CardTitle className='text-sm'>每日访问</CardTitle>
+              <CardTitle className='text-sm'>
+                <PanelTitle icon={ChartNoAxesCombined}>每日访问</PanelTitle>
+              </CardTitle>
               <div className='flex gap-3 text-xs text-muted-foreground'>
                 <span className='inline-flex items-center gap-1.5'>
                   <i className='size-2 rounded-full bg-chart-1' />
@@ -592,7 +623,7 @@ export function VisoraTrends() {
             </CardContent>
           </Card>
           {desktop ? (
-            <Card className='gap-3 py-4 shadow-none xl:col-span-2'>
+            <Card className='gap-3 py-4 xl:col-span-2'>
               <CardContent className='px-4'>{detail}</CardContent>
             </Card>
           ) : (
@@ -691,20 +722,24 @@ export function VisoraAudience() {
       {visitors.isPending && <Skeleton className='h-16 rounded-xl' />}
       {visitors.data && (
         <div className='grid grid-cols-2 gap-2'>
-          <Card className='gap-1 py-3 shadow-none'>
+          <Card tone='violet' className='gap-3 py-4'>
             <CardHeader className='px-3 pb-0'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                新访客
+                <PanelTitle icon={Users} tone='violet'>
+                  新访客
+                </PanelTitle>
               </CardTitle>
             </CardHeader>
             <CardContent className='px-3 text-2xl font-semibold tabular-nums'>
               {formatNumber(visitors.data.newVisitors)}
             </CardContent>
           </Card>
-          <Card className='gap-1 py-3 shadow-none'>
+          <Card tone='teal' className='gap-3 py-4'>
             <CardHeader className='px-3 pb-0'>
               <CardTitle className='text-xs font-medium text-muted-foreground'>
-                回访
+                <PanelTitle icon={UserRoundCheck} tone='teal'>
+                  回访
+                </PanelTitle>
               </CardTitle>
             </CardHeader>
             <CardContent className='px-3 text-2xl font-semibold tabular-nums'>

@@ -1,5 +1,14 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowUpRight } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Code2,
+  UserRound,
+  Zap,
+  Server,
+  Settings2,
+  CheckCircle2,
+  ShieldCheck,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import browserUserSource from '../../../../sdk/browser.mjs?raw'
 import { browserSnippet, CodeBlock } from './code-block'
 import { VisoraPage } from './shared'
+import { PanelTitle } from './visuals'
 
 const switches = [
   ['data-hash="true"', '页面使用 Hash 路由时打开。'],
@@ -70,30 +80,39 @@ export function VisoraIntegrations() {
       <Tabs defaultValue='web' className='gap-3'>
         <TabsList className='h-auto w-full justify-start'>
           <TabsTrigger value='web' className='min-h-11 md:min-h-8'>
+            <Code2 className='max-sm:hidden' />
             网页
           </TabsTrigger>
           <TabsTrigger value='user' className='min-h-11 md:min-h-8'>
+            <UserRound className='max-sm:hidden' />
             登录用户
           </TabsTrigger>
           <TabsTrigger value='event' className='min-h-11 md:min-h-8'>
+            <Zap className='max-sm:hidden' />
             业务事件
           </TabsTrigger>
           <TabsTrigger value='server' className='min-h-11 md:min-h-8'>
+            <Server className='max-sm:hidden' />
             服务端
           </TabsTrigger>
           <TabsTrigger value='ref' className='min-h-11 md:min-h-8'>
+            <Settings2 className='max-sm:hidden' />
             开关
           </TabsTrigger>
         </TabsList>
         <TabsContent value='web'>
-          <Card className='shadow-none'>
+          <Card>
             <CardHeader>
-              <CardTitle className='text-base'>网页接入</CardTitle>
+              <CardTitle className='text-base'>
+                <PanelTitle icon={Code2} tone='info'>
+                  网页接入
+                </PanelTitle>
+              </CardTitle>
               <CardDescription>
                 React、Vue、静态页面和单页应用都使用这一段脚本，不用按项目改写指南。
               </CardDescription>
             </CardHeader>
-            <CardContent className='flex flex-col gap-4'>
+            <CardContent className='grid items-start gap-5 xl:grid-cols-2'>
               <ol className='flex flex-col gap-3 text-sm leading-6'>
                 <li className='flex gap-3'>
                   <StepIndex>1</StepIndex>
@@ -126,7 +145,7 @@ export function VisoraIntegrations() {
                 label='HTML · 放入 <head>'
                 code={browserSnippet('站点ID')}
               />
-              <div className='grid gap-4 text-sm sm:grid-cols-2'>
+              <div className='grid gap-4 text-sm sm:grid-cols-2 xl:col-span-2'>
                 <RecordList
                   title='会自动记录'
                   items={[
@@ -145,7 +164,7 @@ export function VisoraIntegrations() {
                   ]}
                 />
               </div>
-              <p className='text-xs leading-6 text-muted-foreground'>
+              <p className='text-xs leading-6 text-muted-foreground xl:col-span-2'>
                 允许来源必须与浏览器地址完全一致，包含协议和端口。本机访问通常显示
                 127.0.0.1 或 ::1，已经产生的历史记录不会补写 IP。
               </p>
@@ -153,9 +172,13 @@ export function VisoraIntegrations() {
           </Card>
         </TabsContent>
         <TabsContent value='user'>
-          <Card className='shadow-none'>
+          <Card>
             <CardHeader>
-              <CardTitle className='text-base'>登录用户</CardTitle>
+              <CardTitle className='text-base'>
+                <PanelTitle icon={UserRound} tone='violet'>
+                  登录用户
+                </PanelTitle>
+              </CardTitle>
               <CardDescription>
                 Visora
                 不读取其他系统的登录状态。需要在明细中显示账号时，在登录恢复、登录、切换和退出时同步一次。
@@ -191,9 +214,13 @@ syncVisoraUser(currentUser ? {
           </Card>
         </TabsContent>
         <TabsContent value='event'>
-          <Card className='shadow-none'>
+          <Card>
             <CardHeader>
-              <CardTitle className='text-base'>业务事件</CardTitle>
+              <CardTitle className='text-base'>
+                <PanelTitle icon={Zap} tone='amber'>
+                  业务事件
+                </PanelTitle>
+              </CardTitle>
               <CardDescription>
                 自动采集只能说明用户操作了哪个控件，不能判断业务是否成功。
               </CardDescription>
@@ -210,7 +237,7 @@ syncVisoraUser(currentUser ? {
           </Card>
         </TabsContent>
         <TabsContent value='server'>
-          <Card className='shadow-none'>
+          <Card>
             <CardHeader>
               <CardTitle className='text-base'>服务端上报</CardTitle>
               <CardDescription>
@@ -227,9 +254,13 @@ syncVisoraUser(currentUser ? {
           </Card>
         </TabsContent>
         <TabsContent value='ref'>
-          <Card className='shadow-none'>
+          <Card>
             <CardHeader>
-              <CardTitle className='text-base'>开关与口径</CardTitle>
+              <CardTitle className='text-base'>
+                <PanelTitle icon={Settings2} tone='info'>
+                  开关与口径
+                </PanelTitle>
+              </CardTitle>
               <CardDescription>
                 只有和默认行为不同时才需要这些属性。
               </CardDescription>
@@ -265,7 +296,7 @@ syncVisoraUser(currentUser ? {
 
 function StepIndex({ children }: { children: string }) {
   return (
-    <span className='mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary'>
+    <span className='mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-info/10 text-xs font-semibold text-info ring-1 ring-info/15'>
       {children}
     </span>
   )
@@ -273,8 +304,15 @@ function StepIndex({ children }: { children: string }) {
 
 function RecordList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className='rounded-lg bg-muted/40 p-4'>
-      <p className='mb-2 text-sm font-medium'>{title}</p>
+    <div className='rounded-xl border p-4'>
+      <p className='mb-3 text-sm font-medium'>
+        <PanelTitle
+          icon={title === '会自动记录' ? CheckCircle2 : ShieldCheck}
+          tone={title === '会自动记录' ? 'teal' : 'amber'}
+        >
+          {title}
+        </PanelTitle>
+      </p>
       <ul className='flex list-disc flex-col gap-1 pl-4 text-xs leading-5 text-muted-foreground'>
         {items.map((item) => (
           <li key={item}>{item}</li>

@@ -11,7 +11,7 @@
     scrollbar-color: var(--border) transparent;
   }
   html {
-    @apply bg-background;
+    @apply bg-background font-sans antialiased;
     max-width: 100%;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;

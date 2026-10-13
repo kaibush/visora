@@ -15,6 +15,30 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { IconBadge } from './visuals'
+
+const pageIdentity = {
+  访问分析: {
+    icon: LayoutDashboard,
+    tone: 'info',
+    description: '流量、访客与行为洞察',
+  },
+  访问明细: {
+    icon: Activity,
+    tone: 'violet',
+    description: '每一次访问，都有迹可循',
+  },
+  项目管理: {
+    icon: FolderKanban,
+    tone: 'teal',
+    description: '连接项目，汇集访问数据',
+  },
+  接入指南: {
+    icon: Code2,
+    tone: 'amber',
+    description: '让数据从第一行代码开始',
+  },
+} as const
 
 const mobileNav = [
   { to: '/', label: '概览', icon: LayoutDashboard, exact: true },
@@ -72,18 +96,29 @@ export function VisoraPage({
   action?: ReactNode
   toolbar?: ReactNode
 }) {
+  const identity = pageIdentity[title as keyof typeof pageIdentity]
   return (
     <>
       <Header fixed className='border-b bg-background/95 backdrop-blur'>
-        <h1 className='min-w-0 flex-1 truncate text-base font-semibold tracking-tight'>
-          {title}
-        </h1>
+        {identity && (
+          <IconBadge icon={identity.icon} tone={identity.tone} size='sm' />
+        )}
+        <div className='min-w-0 flex-1'>
+          <h1 className='truncate text-base font-semibold tracking-tight'>
+            {title}
+          </h1>
+          {identity && (
+            <p className='mt-0.5 hidden text-xs text-muted-foreground lg:block'>
+              {identity.description}
+            </p>
+          )}
+        </div>
         <div className='ms-auto flex shrink-0 items-center gap-1.5 sm:gap-2'>
           {action}
           <ThemeSwitch />
         </div>
       </Header>
-      <Main className='flex flex-col gap-3 p-3 md:gap-4 md:p-4' fluid>
+      <Main className='flex flex-col gap-3 p-3 md:gap-4 md:p-5' fluid>
         {toolbar}
         {children}
       </Main>
@@ -122,7 +157,7 @@ export function EmptyState({
   link?: boolean
 }) {
   return (
-    <Card className='border-dashed shadow-none'>
+    <Card className='border-dashed'>
       <CardContent className='flex flex-col items-center py-8 text-center'>
         <div className='mb-4 rounded-2xl bg-primary/10 p-3'>
           <Radar className='size-7 text-primary' />

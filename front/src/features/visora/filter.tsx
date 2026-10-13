@@ -128,7 +128,7 @@ export function AnalyticsFilters({
             className={stacked ? 'h-11 w-full' : 'h-9 w-44'}
             aria-label='筛选项目'
           >
-            <Layers className='size-4 text-muted-foreground' />
+            <Layers className='size-4 text-info' />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -159,7 +159,7 @@ export function AnalyticsFilters({
             className={stacked ? 'h-11 w-full' : 'h-9 w-36'}
             aria-label='日期范围'
           >
-            <CalendarDays className='size-4 text-muted-foreground' />
+            <CalendarDays className='size-4 text-info' />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -264,7 +264,7 @@ export function AnalyticsFilters({
   return (
     <>
       {desktop ? (
-        <div className='flex min-w-0 flex-wrap items-center gap-2 rounded-lg border bg-card px-2 py-2'>
+        <div className='flex min-w-0 flex-wrap items-center gap-2 rounded-xl border bg-muted/25 px-3 py-2.5'>
           {controls('desk', false)}
           <span className='hidden text-xs text-muted-foreground xl:inline'>
             {filter.from} — {filter.to}

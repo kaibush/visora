@@ -52,7 +52,7 @@ export function VisoraLogin() {
 
   return (
     <div className='grid min-h-svh max-w-full overflow-x-hidden lg:grid-cols-2'>
-      <div className='relative hidden flex-col justify-between overflow-hidden bg-foreground p-10 text-background lg:flex'>
+      <div className='relative hidden flex-col justify-between overflow-hidden bg-brand p-10 text-brand-foreground lg:flex'>
         <div className='flex items-center gap-3 text-2xl font-semibold'>
           <span className='rounded-xl bg-primary p-2 text-primary-foreground'>
             <ChartNoAxesCombined />
@@ -68,12 +68,12 @@ export function VisoraLogin() {
             <br />
             连接每一个项目。
           </h1>
-          <p className='mt-6 max-w-md text-sm leading-7 text-background/70'>
+          <p className='mt-6 max-w-md text-sm leading-7 text-brand-foreground/70'>
             将分散在各个系统的访问数据汇聚一处。
             <br />
             从第一位访客，到每一次产品增长。
           </p>
-          <div className='mt-8 flex gap-6 text-sm text-background/80'>
+          <div className='mt-8 flex gap-6 text-sm text-brand-foreground/80'>
             <span className='flex items-center gap-2'>
               <Layers className='size-4 text-primary' />
               多项目聚合
@@ -88,7 +88,7 @@ export function VisoraLogin() {
           aria-hidden
           className='absolute -right-24 bottom-16 size-80 rounded-full border border-primary/20'
         />
-        <p className='text-xs text-background/50'>Visora</p>
+        <p className='text-xs text-brand-foreground/50'>Visora</p>
       </div>
       <main className='flex min-w-0 items-center justify-center px-4 py-10 sm:px-6 sm:py-16'>
         <div className='w-full max-w-sm'>

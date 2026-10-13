@@ -12,7 +12,13 @@ const config = loadConfig(
   },
   { VISORA_LOGIN_RATE_LIMIT: '50' } // Shared test server runs multiple independent login scenarios.
 )
-const app = await buildApp({ config, logger: false })
+const app = await buildApp({
+  config: {
+    ...config,
+    frontendDir: process.env.VISORA_E2E_FRONTEND_DIR || config.frontendDir,
+  },
+  logger: false,
+})
 const setup = await app.inject({
   method: 'POST',
   url: '/api/auth/setup',

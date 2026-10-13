@@ -61,6 +61,7 @@ import {
 import { browserSnippet, CodeBlock } from './code-block'
 import { ProjectKeyDialog } from './project-key-dialog'
 import { EmptyState, ErrorState, VisoraPage } from './shared'
+import { IconBadge } from './visuals'
 
 function ProjectEditor({
   project,
@@ -372,12 +373,13 @@ export function VisoraProjects() {
       }
     >
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+        <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
+          <IconBadge icon={Globe2} tone='teal' size='sm' />
           <span className='font-medium text-foreground'>
             {data?.projects.length ?? 0}
           </span>{' '}
           个项目<span className='mx-2 text-border'>|</span>
-          <span className='size-1.5 rounded-full bg-emerald-500' />
+          <span className='size-1.5 rounded-full bg-teal' />
           {data?.projects.filter((p) => p.enabled).length ?? 0} 个已启用
         </div>
         <div className='relative w-full sm:w-72'>
@@ -412,22 +414,25 @@ export function VisoraProjects() {
       )}
       <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
         {projects.map((project) => (
-          <Card key={project.id} className='gap-4 py-4 shadow-none'>
-            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3'>
-              <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-semibold text-primary'>
+          <Card key={project.id} className='gap-4 overflow-hidden py-0'>
+            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b bg-teal/4 px-4 py-4'>
+              <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal/12 text-lg font-semibold text-teal ring-1 ring-teal/15'>
                 {project.name.slice(0, 1).toUpperCase()}
               </div>
-              <div className='min-w-0 flex-1 space-y-2'>
+              <div className='flex min-w-0 flex-1 flex-col gap-2'>
                 <CardTitle className='truncate text-base' title={project.name}>
                   {project.name}
                 </CardTitle>
                 <Badge
-                  variant='outline'
+                  variant={
+                    !project.enabled
+                      ? 'secondary'
+                      : project.lastEvent
+                        ? 'success'
+                        : 'warning'
+                  }
                   className='gap-1.5 text-[11px] font-normal'
                 >
-                  <span
-                    className={`size-1.5 rounded-full ${!project.enabled ? 'bg-slate-400' : project.lastEvent ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                  />
                   {!project.enabled
                     ? '已暂停'
                     : project.lastEvent
@@ -445,7 +450,7 @@ export function VisoraProjects() {
                 onDelete={() => setRemoveTarget(project)}
               />
             </CardHeader>
-            <CardContent className='space-y-4'>
+            <CardContent className='flex flex-col gap-4 px-4'>
               <div className='flex items-center gap-2 text-xs text-muted-foreground'>
                 <Globe2 className='size-3.5 shrink-0' />
                 <span className='truncate' title={project.origins.join(', ')}>
@@ -471,9 +476,9 @@ export function VisoraProjects() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className='grid grid-cols-2 gap-2'>
+            <CardFooter className='grid grid-cols-2 gap-2 border-t bg-muted/20 px-4 py-3 [.border-t]:pt-3'>
               <Button
-                variant='outline'
+                variant='secondary'
                 className='min-h-11 min-w-0 px-2'
                 onClick={() => setInstall(project)}
               >

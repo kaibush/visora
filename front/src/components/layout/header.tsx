@@ -37,7 +37,7 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
     >
       <div
         className={cn(
-          'relative flex h-12 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4',
+          'relative flex h-14 min-w-0 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-5',
           offset > 10 &&
             fixed &&
             'after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg'

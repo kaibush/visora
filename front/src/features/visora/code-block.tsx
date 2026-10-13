@@ -10,13 +10,13 @@ export function CodeBlock({
   label?: string
 }) {
   return (
-    <div className='max-w-full min-w-0 overflow-hidden rounded-lg border bg-muted/40'>
-      <div className='flex items-center justify-between gap-2 border-b px-3 py-2 sm:px-4'>
-        <span className='min-w-0 truncate text-xs text-muted-foreground'>
+    <div className='max-w-full min-w-0 overflow-hidden rounded-xl border border-code bg-code text-code-foreground shadow-panel'>
+      <div className='flex items-center justify-between gap-2 border-b border-code-foreground/10 px-3 py-2 sm:px-4'>
+        <span className='min-w-0 truncate text-xs text-code-foreground/70'>
           {label}
         </span>
         <Button
-          variant='ghost'
+          variant='code'
           size='sm'
           className='h-8 shrink-0 text-xs'
           onClick={async () => {

@@ -1,5 +1,14 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
+import {
+  Activity,
+  ChartNoAxesCombined,
+  FileText,
+  Globe2,
+  LayoutDashboard,
+  Plus,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,13 +31,13 @@ import { OverviewPanel } from './overview'
 import { VisoraPage } from './shared'
 import { useMinWidth } from './use-min-width'
 
-const sections: { id: AnalysisView; label: string }[] = [
-  { id: 'overview', label: '概览' },
-  { id: 'trends', label: '趋势' },
-  { id: 'pages', label: '页面' },
-  { id: 'sources', label: '来源' },
-  { id: 'audience', label: '受众' },
-  { id: 'behavior', label: '行为' },
+const sections: { id: AnalysisView; label: string; icon: LucideIcon }[] = [
+  { id: 'overview', label: '概览', icon: LayoutDashboard },
+  { id: 'trends', label: '趋势', icon: ChartNoAxesCombined },
+  { id: 'pages', label: '页面', icon: FileText },
+  { id: 'sources', label: '来源', icon: Globe2 },
+  { id: 'audience', label: '受众', icon: Users },
+  { id: 'behavior', label: '行为', icon: Activity },
 ]
 
 function AnalysisSwitch({ current }: { current: AnalysisView }) {
@@ -54,6 +63,7 @@ function AnalysisSwitch({ current }: { current: AnalysisView }) {
           <SelectGroup>
             {sections.map((item) => (
               <SelectItem key={item.id} value={item.id}>
+                <item.icon className='size-4' />
                 {item.label}
               </SelectItem>
             ))}
@@ -63,7 +73,10 @@ function AnalysisSwitch({ current }: { current: AnalysisView }) {
     )
   }
   return (
-    <nav aria-label='分析内容' className='flex flex-wrap gap-1'>
+    <nav
+      aria-label='分析内容'
+      className='flex w-fit max-w-full flex-wrap gap-1 rounded-xl border bg-muted/35 p-1'
+    >
       {sections.map((item) => {
         const active = item.id === current
         return (
@@ -73,12 +86,13 @@ function AnalysisSwitch({ current }: { current: AnalysisView }) {
             search={{ view: item.id === 'overview' ? undefined : item.id }}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'inline-flex h-8 items-center rounded-md px-3 text-sm',
+              'inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors',
               active
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'bg-action text-action-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-info/8 hover:text-info'
             )}
           >
+            <item.icon className='size-4' />
             {item.label}
           </Link>
         )
