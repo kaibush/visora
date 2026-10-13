@@ -209,7 +209,15 @@ syncVisoraUser(currentUser ? {
               <p className='text-xs leading-6 text-muted-foreground'>
                 未确定登录状态时不要调用；确认未登录传
                 null。首屏必须带身份时，给脚本添加 data-wait-for-user="true"。
+                示例里的 id、name、email
+                只是默认字段，每个项目的登录对象通常不同。
               </p>
+              <Button asChild variant='outline' className='h-11 w-fit md:h-8'>
+                <Link to='/prompts'>
+                  按项目生成大模型提示词
+                  <ArrowUpRight className='size-4' />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

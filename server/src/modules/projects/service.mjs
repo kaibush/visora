@@ -12,6 +12,9 @@ function presentProject(project) {
     enabled: project.enabled,
     keyPrefix: project.keyPrefix,
     createdAt: project.createdAt,
+    userIdField: project.userIdField || 'id',
+    userNameField: project.userNameField ?? 'name',
+    userEmailField: project.userEmailField ?? 'email',
     lastEvent: project.lastEvent ?? null,
     totalEvents: project.totalEvents ?? 0,
   }

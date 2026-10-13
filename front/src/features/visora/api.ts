@@ -32,6 +32,9 @@ export type Project = {
   origins: string[]
   enabled: boolean
   keyPrefix: string
+  userIdField: string
+  userNameField: string
+  userEmailField: string
   createdAt: number
   lastEvent: number | null
   totalEvents: number

@@ -1,5 +1,9 @@
 import { fn, col } from 'sequelize'
 
+function fieldOr(value, fallback) {
+  return value === null || value === undefined ? fallback : value
+}
+
 function toProject(row, stats = {}) {
   if (!row) return null
   return {
@@ -7,6 +11,9 @@ function toProject(row, stats = {}) {
     origins: JSON.parse(row.origins),
     enabled: Boolean(row.enabled),
     createdAt: Number(row.createdAt),
+    userIdField: fieldOr(row.userIdField, 'id'),
+    userNameField: fieldOr(row.userNameField, 'name'),
+    userEmailField: fieldOr(row.userEmailField, 'email'),
     lastEvent: stats.lastEvent ? Number(stats.lastEvent) : null,
     totalEvents: Number(stats.totalEvents ?? 0),
   }
@@ -51,7 +58,14 @@ export function createProjectRepository(database) {
     },
     update(project) {
       return Project.update(
-        { name: project.name, origins: JSON.stringify(project.origins), enabled: project.enabled },
+        {
+          name: project.name,
+          origins: JSON.stringify(project.origins),
+          enabled: project.enabled,
+          userIdField: project.userIdField,
+          userNameField: project.userNameField,
+          userEmailField: project.userEmailField,
+        },
         { where: { id: project.id } }
       )
     },

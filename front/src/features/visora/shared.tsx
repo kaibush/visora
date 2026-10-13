@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   Radar,
+  Sparkles,
   Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,11 @@ const pageIdentity = {
     icon: Code2,
     tone: 'amber',
     description: '让数据从第一行代码开始',
+  },
+  大模型接入: {
+    icon: Sparkles,
+    tone: 'info',
+    description: '把项目专属提示词交给任意大模型',
   },
 } as const
 

@@ -42,6 +42,9 @@ export function defineModels(sequelize) {
       keyCiphertext: { type: DataTypes.TEXT, allowNull: true, field: 'key_ciphertext' },
       keyPrefix: text(20, { field: 'key_prefix' }),
       createdAt: integer({ field: 'created_at' }),
+      userIdField: text(80, { field: 'user_id_field', allowNull: true }),
+      userNameField: text(80, { field: 'user_name_field', allowNull: true }),
+      userEmailField: text(80, { field: 'user_email_field', allowNull: true }),
     },
     options('projects')
   )

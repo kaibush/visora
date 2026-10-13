@@ -7,8 +7,9 @@ import { eventUser } from './migrations/004-event-user.mjs'
 
 import { eventContext } from './migrations/005-event-context.mjs'
 import { adminAccount } from './migrations/006-admin.mjs'
+import { projectUserFields } from './migrations/007-project-user-fields.mjs'
 
-const migrations = [initialSchema, eventDay, projectKeyCiphertext, eventUser, eventContext, adminAccount]
+const migrations = [initialSchema, eventDay, projectKeyCiphertext, eventUser, eventContext, adminAccount, projectUserFields]
 export const latestVersion = migrations.at(-1).version
 
 async function currentVersion(models) {

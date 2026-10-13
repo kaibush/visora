@@ -552,6 +552,10 @@ test('legacy SQLite events migrate with UTC day buckets and stable identity salt
   })
   assert.equal(report.statusCode, 200, report.body)
   assert.deepEqual(report.json().trend, [{ date: '2026-10-12', pv: 1, uv: 1 }])
+  const legacyProject = (await app.inject({ url: '/api/projects', headers: { cookie } })).json().projects[0]
+  assert.equal(legacyProject.userIdField, 'id')
+  assert.equal(legacyProject.userNameField, 'name')
+  assert.equal(legacyProject.userEmailField, 'email')
 })
 
 test('concurrent ingestion retries have exact counts and event IDs remain case-sensitive', async (t) => {
@@ -910,4 +914,43 @@ test('day drilldown, breakdown and visitor split stay inside the selected projec
     (await admin('GET', '/api/analytics/breakdown?dimension=name&focus=action&focusValue=click')).statusCode,
     400
   )
+})
+
+test('each project stores its own login user field paths', async (t) => {
+  const { admin, create } = await fixture(t)
+  const created = await create('field-defaults')
+  assert.deepEqual(
+    [created.project.userIdField, created.project.userNameField, created.project.userEmailField],
+    ['id', 'name', 'email']
+  )
+  const custom = await admin('PATCH', `/api/projects/${created.project.id}`, {
+    userIdField: ' userId ',
+    userNameField: 'profile.displayName',
+    userEmailField: '',
+  })
+  assert.equal(custom.statusCode, 200, custom.body)
+  assert.deepEqual(
+    (({ userIdField, userNameField, userEmailField }) => ({ userIdField, userNameField, userEmailField }))(custom.json().project),
+    { userIdField: 'userId', userNameField: 'profile.displayName', userEmailField: '' }
+  )
+  const paused = await admin('PATCH', `/api/projects/${created.project.id}`, { enabled: false })
+  assert.equal(paused.statusCode, 200, paused.body)
+  assert.equal(paused.json().project.enabled, false)
+  assert.equal(paused.json().project.userIdField, 'userId')
+  assert.equal(paused.json().project.userEmailField, '')
+  const listed = (await admin('GET', '/api/projects')).json().projects.find((project) => project.id === created.project.id)
+  assert.equal(listed.userNameField, 'profile.displayName')
+  for (const payload of [
+    { userIdField: '' },
+    { userIdField: 'user.id; alert(1)' },
+    { userNameField: 'profile displayName' },
+    { userEmailField: 'email()' },
+    { userIdField: 'a'.repeat(81) },
+  ]) {
+    assert.equal((await admin('PATCH', `/api/projects/${created.project.id}`, payload)).statusCode, 400, JSON.stringify(payload))
+  }
+  const unchanged = (await admin('GET', '/api/projects')).json().projects.find((project) => project.id === created.project.id)
+  assert.equal(unchanged.userIdField, 'userId')
+  assert.equal(unchanged.userNameField, 'profile.displayName')
+  assert.equal(unchanged.enabled, false)
 })

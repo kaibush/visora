@@ -35,6 +35,7 @@ import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedIntegrationsIndexRouteImport } from './routes/_authenticated/integrations/index'
 import { Route as AuthenticatedPagesIndexRouteImport } from './routes/_authenticated/pages/index'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects/index'
+import { Route as AuthenticatedPromptsIndexRouteImport } from './routes/_authenticated/prompts/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
@@ -183,6 +184,12 @@ const AuthenticatedProjectsIndexRoute =
     path: '/projects/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPromptsIndexRoute =
+  AuthenticatedPromptsIndexRouteImport.update({
+    id: '/prompts/',
+    path: '/prompts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/pages/': typeof AuthenticatedPagesIndexRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/sources/': typeof AuthenticatedSourcesIndexRoute
   '/tasks/': typeof AuthenticatedTasksIndexRoute
@@ -319,6 +327,7 @@ export interface FileRoutesByTo {
   '/integrations': typeof AuthenticatedIntegrationsIndexRoute
   '/pages': typeof AuthenticatedPagesIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/prompts': typeof AuthenticatedPromptsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/sources': typeof AuthenticatedSourcesIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
@@ -360,6 +369,7 @@ export interface FileRoutesById {
   '/_authenticated/integrations/': typeof AuthenticatedIntegrationsIndexRoute
   '/_authenticated/pages/': typeof AuthenticatedPagesIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/_authenticated/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/sources/': typeof AuthenticatedSourcesIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/integrations/'
     | '/pages/'
     | '/projects/'
+    | '/prompts/'
     | '/settings/'
     | '/sources/'
     | '/tasks/'
@@ -435,6 +446,7 @@ export interface FileRouteTypes {
     | '/integrations'
     | '/pages'
     | '/projects'
+    | '/prompts'
     | '/settings'
     | '/sources'
     | '/tasks'
@@ -475,6 +487,7 @@ export interface FileRouteTypes {
     | '/_authenticated/integrations/'
     | '/_authenticated/pages/'
     | '/_authenticated/projects/'
+    | '/_authenticated/prompts/'
     | '/_authenticated/settings/'
     | '/_authenticated/sources/'
     | '/_authenticated/tasks/'
@@ -681,6 +694,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prompts/': {
+      id: '/_authenticated/prompts/'
+      path: '/prompts'
+      fullPath: '/prompts/'
+      preLoaderRoute: typeof AuthenticatedPromptsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/'
@@ -804,6 +824,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntegrationsIndexRoute: typeof AuthenticatedIntegrationsIndexRoute
   AuthenticatedPagesIndexRoute: typeof AuthenticatedPagesIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
+  AuthenticatedPromptsIndexRoute: typeof AuthenticatedPromptsIndexRoute
   AuthenticatedSourcesIndexRoute: typeof AuthenticatedSourcesIndexRoute
   AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedTrendsIndexRoute: typeof AuthenticatedTrendsIndexRoute
@@ -823,6 +844,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntegrationsIndexRoute: AuthenticatedIntegrationsIndexRoute,
   AuthenticatedPagesIndexRoute: AuthenticatedPagesIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
+  AuthenticatedPromptsIndexRoute: AuthenticatedPromptsIndexRoute,
   AuthenticatedSourcesIndexRoute: AuthenticatedSourcesIndexRoute,
   AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedTrendsIndexRoute: AuthenticatedTrendsIndexRoute,

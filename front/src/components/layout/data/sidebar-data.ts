@@ -3,6 +3,7 @@ import {
   ChartNoAxesCombined,
   Code2,
   FolderKanban,
+  Sparkles,
   LayoutDashboard,
   Users,
 } from 'lucide-react'
@@ -27,6 +28,7 @@ export const sidebarData: SidebarData = {
       items: [
         { title: '项目管理', url: '/projects', icon: FolderKanban },
         { title: '接入指南', url: '/integrations', icon: Code2 },
+        { title: '大模型接入', url: '/prompts', icon: Sparkles },
       ],
     },
   ],

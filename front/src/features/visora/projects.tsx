@@ -587,12 +587,20 @@ export function VisoraProjects() {
                 <br />
                 安装后打开目标网站，再返回访问明细查看第一条数据。
               </p>
-              <Button asChild variant='outline'>
-                <Link to='/integrations'>
-                  查看通用接入指南
-                  <ArrowUpRight className='size-4' />
-                </Link>
-              </Button>
+              <div className='flex flex-col gap-2 sm:flex-row'>
+                <Button asChild variant='outline' className='h-11 md:h-9'>
+                  <Link to='/integrations'>
+                    查看通用接入指南
+                    <ArrowUpRight className='size-4' />
+                  </Link>
+                </Button>
+                <Button asChild variant='outline' className='h-11 md:h-9'>
+                  <Link to='/prompts' search={{ project: install.id }}>
+                    生成大模型提示词
+                    <ArrowUpRight className='size-4' />
+                  </Link>
+                </Button>
+              </div>
             </>
           )}
         </DialogContent>

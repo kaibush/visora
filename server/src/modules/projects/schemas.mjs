@@ -22,6 +22,23 @@ const originSchema = z
     }
     return url.origin
   })
+
+const userFieldPath = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(
+    /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/,
+    '请填写字段路径，例如 id 或 profile.displayName'
+  )
+const optionalUserFieldPath = z
+  .string()
+  .trim()
+  .max(80)
+  .refine((value) => value === '' || userFieldPath.safeParse(value).success, {
+    message: '请填写字段路径，例如 username 或 profile.email；留空表示不发送',
+  })
 export const projectSchema = z.object({
   name: z.string().trim().min(1).max(80),
   origins: z
@@ -29,9 +46,15 @@ export const projectSchema = z.object({
     .max(20)
     .transform((items) => [...new Set(items)]),
   enabled: z.boolean().default(true),
+  userIdField: userFieldPath.default('id'),
+  userNameField: optionalUserFieldPath.default('name'),
+  userEmailField: optionalUserFieldPath.default('email'),
 })
 export const projectPatchSchema = z.object({
   name: projectSchema.shape.name.optional(),
   origins: projectSchema.shape.origins.optional(),
   enabled: z.boolean().optional(),
+  userIdField: userFieldPath.optional(),
+  userNameField: optionalUserFieldPath.optional(),
+  userEmailField: optionalUserFieldPath.optional(),
 })
