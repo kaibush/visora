@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowUpRight,
+  Clock3,
   Code2,
-  Globe2,
   KeyRound,
   MoreHorizontal,
   Pause,
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -35,6 +36,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -61,7 +63,6 @@ import {
 import { browserSnippet, CodeBlock } from './code-block'
 import { ProjectKeyDialog } from './project-key-dialog'
 import { EmptyState, ErrorState, VisoraPage } from './shared'
-import { IconBadge } from './visuals'
 
 function ProjectEditor({
   project,
@@ -279,32 +280,36 @@ function ProjectActions({
         <Button
           variant='ghost'
           size='icon'
-          className='size-11 shrink-0'
+          className='size-11 shrink-0 md:size-8'
           aria-label={label}
         >
           <MoreHorizontal className='size-4' />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-48'>
-        {items.slice(0, -1).map((item) => (
-          <DropdownMenuItem
-            key={item.label}
-            disabled={pending}
-            onClick={item.action}
-          >
-            <item.icon className='size-4' />
-            {item.label}
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuGroup>
+          {items.slice(0, -1).map((item) => (
+            <DropdownMenuItem
+              key={item.label}
+              disabled={pending}
+              onClick={item.action}
+            >
+              <item.icon className='size-4' />
+              {item.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant='destructive'
-          disabled={pending}
-          onClick={items[items.length - 1]?.action}
-        >
-          <Trash2 className='size-4' />
-          删除项目
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            variant='destructive'
+            disabled={pending}
+            onClick={items[items.length - 1]?.action}
+          >
+            <Trash2 className='size-4' />
+            删除项目
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -373,17 +378,17 @@ export function VisoraProjects() {
       }
     >
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
-          <IconBadge icon={Globe2} tone='teal' size='sm' />
-          <span className='font-medium text-foreground'>
-            {data?.projects.length ?? 0}
-          </span>{' '}
-          个项目<span className='mx-2 text-border'>|</span>
-          <span className='size-1.5 rounded-full bg-teal' />
-          {data?.projects.filter((p) => p.enabled).length ?? 0} 个已启用
+        <div className='flex flex-wrap items-center gap-3'>
+          <div className='flex items-center gap-2 text-sm font-medium'>
+            全部项目
+            <Badge variant='secondary'>{data?.projects.length ?? 0}</Badge>
+          </div>
+          <span className='text-xs text-muted-foreground'>
+            {data?.projects.filter((p) => p.enabled).length ?? 0} 个已启用
+          </span>
         </div>
         <div className='relative w-full sm:w-72'>
-          <Search className='absolute top-3 left-3 size-4 text-muted-foreground' />
+          <Search className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground' />
           <Input
             aria-label='搜索项目'
             placeholder='搜索项目或域名…'
@@ -395,9 +400,9 @@ export function VisoraProjects() {
       </div>
       {error && <ErrorState error={error} retry={() => void refetch()} />}
       {isPending && (
-        <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <div className='grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4'>
           {[1, 2, 3].map((n) => (
-            <Skeleton key={n} className='h-64 rounded-xl' />
+            <Skeleton key={n} className='h-64 rounded-xl md:h-60' />
           ))}
         </div>
       )}
@@ -412,33 +417,48 @@ export function VisoraProjects() {
           link={false}
         />
       )}
-      <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+      <div className='grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4'>
         {projects.map((project) => (
-          <Card key={project.id} className='gap-4 overflow-hidden py-0'>
-            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b px-4 py-4'>
-              <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-info/10 text-lg font-semibold text-info ring-1 ring-info/15'>
+          <Card
+            key={project.id}
+            role='article'
+            aria-label={`${project.name} 项目`}
+            className='gap-5 py-0'
+          >
+            <CardHeader className='flex flex-row items-center gap-3 px-5 pt-5'>
+              <div
+                aria-hidden='true'
+                className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-info/10 text-base font-semibold text-info'
+              >
                 {project.name.slice(0, 1).toUpperCase()}
               </div>
-              <div className='flex min-w-0 flex-1 flex-col gap-2'>
-                <CardTitle className='truncate text-base' title={project.name}>
+              <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+                <CardTitle
+                  role='heading'
+                  aria-level={2}
+                  className='truncate text-base'
+                  title={project.name}
+                >
                   {project.name}
                 </CardTitle>
-                <Badge
-                  variant={
-                    !project.enabled
-                      ? 'secondary'
-                      : project.lastEvent
-                        ? 'success'
-                        : 'warning'
-                  }
-                  className='gap-1.5 text-[11px] font-normal'
+                <CardDescription
+                  className='flex min-w-0 items-center gap-2 text-xs'
+                  title={project.origins.join('\n') || '仅服务端接入'}
                 >
-                  {!project.enabled
-                    ? '已暂停'
-                    : project.lastEvent
-                      ? '已收到数据'
-                      : '等待接入'}
-                </Badge>
+                  <span className='truncate'>
+                    {project.origins.length
+                      ? project.origins[0].replace(/^https?:\/\//, '')
+                      : '仅服务端接入'}
+                  </span>
+                  {project.origins.length > 1 && (
+                    <span
+                      className='shrink-0'
+                      aria-label={`另有 ${project.origins.length - 1} 个来源`}
+                    >
+                      +{project.origins.length - 1}
+                    </span>
+                  )}
+                </CardDescription>
               </div>
               <ProjectActions
                 name={project.name}
@@ -450,47 +470,71 @@ export function VisoraProjects() {
                 onDelete={() => setRemoveTarget(project)}
               />
             </CardHeader>
-            <CardContent className='flex flex-col gap-4 px-4'>
-              <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                <Globe2 className='size-3.5 shrink-0' />
-                <span className='truncate' title={project.origins.join(', ')}>
-                  {project.origins.length
-                    ? project.origins.join(', ')
-                    : '仅服务端接入'}
-                </span>
-              </div>
-              <div className='grid grid-cols-2 gap-4 border-t pt-4'>
-                <div>
-                  <p className='text-xs text-muted-foreground'>保留期内事件</p>
-                  <p className='mt-1 text-xl font-semibold tabular-nums'>
+            <CardContent className='flex flex-col gap-3 px-5'>
+              <div className='flex flex-wrap items-end justify-between gap-3'>
+                <dl className='flex min-w-0 flex-col gap-1.5'>
+                  <dt className='text-xs text-muted-foreground'>
+                    保留期内事件
+                  </dt>
+                  <dd className='text-3xl leading-none font-semibold tracking-tight tabular-nums'>
                     {formatNumber(project.totalEvents)}
-                  </p>
-                </div>
-                <div>
-                  <p className='text-xs text-muted-foreground'>
-                    最近访问 · 上海时间
-                  </p>
-                  <p className='mt-2 text-xs'>
-                    {formatTime(project.lastEvent)}
-                  </p>
-                </div>
+                  </dd>
+                </dl>
+                <Badge
+                  variant={
+                    !project.enabled
+                      ? 'outline'
+                      : project.lastEvent
+                        ? 'success'
+                        : 'warning'
+                  }
+                >
+                  {!project.enabled
+                    ? '已暂停'
+                    : project.lastEvent
+                      ? '已收到数据'
+                      : '等待接入'}
+                </Badge>
               </div>
+              <p
+                className='flex items-center gap-1.5 text-xs text-muted-foreground'
+                title='时间按上海时区显示'
+              >
+                <Clock3 aria-hidden='true' className='size-3.5 shrink-0' />
+                <span className='flex flex-wrap gap-x-1'>
+                  {project.lastEvent ? (
+                    <>
+                      最近访问
+                      <time
+                        dateTime={new Date(project.lastEvent).toISOString()}
+                      >
+                        {formatTime(project.lastEvent)}
+                      </time>
+                      <span className='sr-only'>上海时间</span>
+                    </>
+                  ) : (
+                    '尚未收到访问数据'
+                  )}
+                </span>
+              </p>
             </CardContent>
-            <CardFooter className='grid grid-cols-2 gap-2 border-t bg-muted/20 px-4 py-3 [.border-t]:pt-3'>
+            <CardFooter className='mx-5 mt-auto grid grid-cols-2 gap-2 border-t px-0 py-2 [.border-t]:pt-2'>
               <Button
-                variant='secondary'
-                className='min-h-11 min-w-0 px-2'
+                variant='link'
+                size='sm'
+                className='h-11 min-w-0 md:h-9'
                 onClick={() => setInstall(project)}
               >
-                <Code2 className='size-4 shrink-0' />
+                <Code2 data-icon='inline-start' />
                 <span className='truncate'>接入代码</span>
               </Button>
               <Button
-                variant='outline'
-                className='min-h-11 min-w-0 px-2'
+                variant='ghost'
+                size='sm'
+                className='h-11 min-w-0 md:h-9'
                 onClick={() => setCredentials({ project })}
               >
-                <KeyRound className='size-4 shrink-0' />
+                <KeyRound data-icon='inline-start' />
                 <span className='truncate'>查看密钥</span>
               </Button>
             </CardFooter>
