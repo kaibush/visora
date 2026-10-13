@@ -94,6 +94,39 @@ export type EventPage = {
   page: number
   pageSize: number
 }
+export type TrackedUser = {
+  projectId: string
+  projectName: string
+  userId: string
+  name: string | null
+  email: string | null
+  pv: number
+  events: number
+  sessions: number
+  ips: number
+  lastSeen: number
+}
+export type HotIp = {
+  ip: string
+  pv: number
+  visitors: number
+  projects: number
+  lastSeen: number
+}
+export type UserDirectory = {
+  users: TrackedUser[]
+  total: number
+  page: number
+  pageSize: number
+  hotUsers: TrackedUser[]
+  hotIps: HotIp[]
+  summary: {
+    users: number
+    ips: number
+    identifiedPv: number
+    anonymousPv: number
+  }
+}
 export type ExploreRow = {
   key: string
   name: string

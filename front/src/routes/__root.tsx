@@ -19,6 +19,7 @@ export const Route = createRootRouteWithContext<{
       '/sign-in',
       '/projects',
       '/events',
+      '/users',
       '/integrations',
       '/trends',
       '/pages',

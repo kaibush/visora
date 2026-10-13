@@ -33,7 +33,13 @@ const date = (offset = 0) =>
   new Date(Date.now() + offset * 86400000 + 8 * 3600000)
     .toISOString()
     .slice(0, 10)
-type Filter = { project: string; from: string; to: string; userId: string }
+type Filter = {
+  project: string
+  from: string
+  to: string
+  userId: string
+  ip: string
+}
 const FilterContext = createContext<{
   filter: Filter
   setFilter: (filter: Filter) => void
@@ -42,7 +48,7 @@ const FilterContext = createContext<{
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [filter, setFilter] = useState<Filter>(() => {
     const today = date()
-    return { project: 'all', userId: '', from: today, to: today }
+    return { project: 'all', userId: '', ip: '', from: today, to: today }
   })
   return <FilterContext value={{ filter, setFilter }}>{children}</FilterContext>
 }
@@ -255,6 +261,18 @@ export function AnalyticsFilters({
             </Button>
           )}
         </form>
+        {filter.ip && (
+          <Button
+            type='button'
+            variant='outline'
+            className='max-w-full'
+            aria-label='清除 IP 筛选'
+            onClick={() => setFilter({ ...filter, ip: '' })}
+          >
+            <span className='truncate'>IP：{filter.ip}</span>
+            <span aria-hidden='true'>×</span>
+          </Button>
+        )}
       </>
     )
   }
@@ -301,6 +319,7 @@ export function AnalyticsFilters({
             <span className='truncate'>
               {projectName} · {rangeLabel}
               {filter.userId ? ` · ${filter.userId}` : ''}
+              {filter.ip ? ` · IP ${filter.ip}` : ''}
             </span>
           </Button>
           <Button

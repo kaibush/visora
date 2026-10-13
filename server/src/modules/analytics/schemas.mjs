@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isIP } from 'node:net'
 import { AppError } from '../../shared/errors.mjs'
 
 const day = 86400000
@@ -18,6 +19,7 @@ export function parseFilter(query, now) {
     .object({
       project: z.string().max(80).default('all'),
       userId: z.string().trim().max(128).default(''),
+      ip: z.string().trim().max(45).refine((value) => !value || isIP(value) !== 0, 'IP 地址无效').default(''),
       from: dateString.default(today),
       to: dateString.default(today),
       page: z.coerce.number().int().min(1).max(100000).default(1),
@@ -29,6 +31,10 @@ export function parseFilter(query, now) {
     throw new AppError('INVALID_INPUT', '日期范围必须在 1–366 天之间')
   }
   return { ...input, start, end, timezone, offset }
+}
+
+export function parseUserSearch(query) {
+  return z.string().trim().max(120).default('').parse(query.search)
 }
 
 const exploreDimension = z.enum([

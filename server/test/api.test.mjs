@@ -76,6 +76,7 @@ test('admin routes require session; login/logout, expiry and same-origin checks 
     '/api/analytics/breakdown?dimension=path',
     '/api/analytics/series?dimension=path&value=/',
     '/api/analytics/visitors',
+    '/api/users',
     '/api/events',
     '/api/export',
     '/api/auth/session',
@@ -910,4 +911,3 @@ test('day drilldown, breakdown and visitor split stay inside the selected projec
     400
   )
 })
-

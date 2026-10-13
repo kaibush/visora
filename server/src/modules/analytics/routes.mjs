@@ -5,6 +5,7 @@ export async function analyticsRoutes(app, { service, requireAdmin }) {
   app.get('/analytics/breakdown', async (request) => service.breakdown(request.query))
   app.get('/analytics/series', async (request) => service.series(request.query))
   app.get('/analytics/visitors', async (request) => service.visitors(request.query))
+  app.get('/users', async (request) => service.users(request.query))
   app.get('/events', async (request) => service.events(request.query))
   app.get('/export', async (request, reply) => {
     const { csv, filename } = await service.export(request.query)

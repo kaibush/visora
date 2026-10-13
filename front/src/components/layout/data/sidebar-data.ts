@@ -4,6 +4,7 @@ import {
   Code2,
   FolderKanban,
   LayoutDashboard,
+  Users,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -18,6 +19,7 @@ export const sidebarData: SidebarData = {
       items: [
         { title: '访问概览', url: '/', icon: LayoutDashboard },
         { title: '访问明细', url: '/events', icon: Activity },
+        { title: '用户列表', url: '/users', icon: Users },
       ],
     },
     {

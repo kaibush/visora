@@ -1,10 +1,12 @@
 import { Op, fn, col, literal } from 'sequelize'
+import { createUsersRepository } from './users-repository.mjs'
 
 function eventFilter(filter, type) {
   return {
     occurredAt: { [Op.gte]: filter.start, [Op.lt]: filter.end },
     ...(filter.project === 'all' ? {} : { projectId: filter.project }),
     ...(filter.userId ? { userId: filter.userId } : {}),
+    ...(filter.ip ? { ip: filter.ip } : {}),
     ...(type ? { type } : {}),
   }
 }
@@ -72,6 +74,7 @@ function exploreWhere(filter, { dimension, value, focus, focusValue } = {}) {
 export function createAnalyticsRepository({ models }) {
   const { Event, Project } = models
   return {
+    users: createUsersRepository(models),
     async counts(filter) {
       const [rows, events] = await Promise.all([
         Event.findAll({
@@ -275,6 +278,7 @@ export function createAnalyticsRepository({ models }) {
            WHERE type = 'pageview'
              AND (:projectId IS NULL OR project_id = :projectId)
              AND (:userId IS NULL OR user_id = :userId)
+             AND (:ip IS NULL OR ip = :ip)
            GROUP BY visitor
            HAVING MAX(CASE WHEN occurred_at >= :start AND occurred_at < :end THEN 1 ELSE 0 END) = 1
          ) AS visitor_first_seen`,
@@ -284,6 +288,7 @@ export function createAnalyticsRepository({ models }) {
             end: filter.end,
             projectId: filter.project === 'all' ? null : filter.project,
             userId: filter.userId || null,
+            ip: filter.ip || null,
           },
         }
       )

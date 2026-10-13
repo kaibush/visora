@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   Radar,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,11 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { IconBadge } from './visuals'
 
 const pageIdentity = {
+  用户列表: {
+    icon: Users,
+    tone: 'violet',
+    description: '识别活跃用户，追踪访问来源',
+  },
   访问分析: {
     icon: LayoutDashboard,
     tone: 'info',
@@ -43,6 +49,7 @@ const pageIdentity = {
 const mobileNav = [
   { to: '/', label: '概览', icon: LayoutDashboard, exact: true },
   { to: '/events', label: '明细', icon: Activity, exact: false },
+  { to: '/users', label: '用户', icon: Users, exact: false },
   { to: '/projects', label: '项目', icon: FolderKanban, exact: false },
   { to: '/integrations', label: '接入', icon: Code2, exact: false },
 ] as const
@@ -57,7 +64,7 @@ export function VisoraMobileNav() {
       className='fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur md:hidden'
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <ul className='grid grid-cols-4'>
+      <ul className='grid grid-cols-5'>
         {mobileNav.map((item) => {
           const active = item.exact
             ? pathname === item.to

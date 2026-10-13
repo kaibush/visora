@@ -1,5 +1,5 @@
 import { AppError } from '../../shared/errors.mjs'
-import { parseBreakdown, parseDay, parseFilter, parseSeries } from './schemas.mjs'
+import { parseBreakdown, parseDay, parseFilter, parseSeries, parseUserSearch } from './schemas.mjs'
 import { toCsv } from './csv.mjs'
 
 const day = 86400000
@@ -48,6 +48,12 @@ export function createAnalyticsService({ repository, projects, clock }) {
     return new Map((await repository.projectNames()).map((project) => [project.id, project.name]))
   }
   return {
+    async users(query) {
+      const filter = await filterFor(query)
+      const search = parseUserSearch(query)
+      const result = await repository.users(filter, search, pageSize)
+      return { ...result, page: filter.page, pageSize }
+    },
     async report(query) {
       const filter = await filterFor(query)
       const now = clock()
