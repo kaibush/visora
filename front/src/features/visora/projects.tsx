@@ -415,8 +415,8 @@ export function VisoraProjects() {
       <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
         {projects.map((project) => (
           <Card key={project.id} className='gap-4 overflow-hidden py-0'>
-            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b bg-teal/4 px-4 py-4'>
-              <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal/12 text-lg font-semibold text-teal ring-1 ring-teal/15'>
+            <CardHeader className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b px-4 py-4'>
+              <div className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-info/10 text-lg font-semibold text-info ring-1 ring-info/15'>
                 {project.name.slice(0, 1).toUpperCase()}
               </div>
               <div className='flex min-w-0 flex-1 flex-col gap-2'>
