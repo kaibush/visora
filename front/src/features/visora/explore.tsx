@@ -117,7 +117,7 @@ function CategoryTick({
       y={y}
       dy={12}
       textAnchor='middle'
-      fill={active ? 'var(--foreground)' : 'var(--muted-foreground)'}
+      fill={active ? 'var(--primary)' : 'var(--muted-foreground)'}
       fontSize={11}
       fontWeight={active ? 700 : 400}
     >
@@ -157,8 +157,6 @@ function ClickableBars({
           key={point.key}
           fill={color}
           fillOpacity={!hasSelection || active ? 1 : 0.2}
-          stroke={active ? 'var(--foreground)' : 'none'}
-          strokeWidth={active ? 2 : 0}
         />
       )
     })
@@ -215,29 +213,6 @@ function ClickableBars({
             minPointSize={onSelect ? 3 : 0}
             cursor={onSelect ? 'pointer' : undefined}
             activeBar={false}
-            background={(bar) => {
-              const point = bar.payload as BarPoint | undefined
-              if (
-                !hasSelection ||
-                point?.key !== selected ||
-                !Number.isFinite(bar.width) ||
-                !Number.isFinite(bar.height)
-              ) {
-                return null
-              }
-              const pad = 3
-              return (
-                <rect
-                  x={bar.x - pad}
-                  y={bar.y}
-                  width={bar.width * 2 + barGap + pad * 2}
-                  height={bar.height}
-                  fill='var(--primary)'
-                  fillOpacity={0.18}
-                  rx={6}
-                />
-              )
-            }}
             onClick={choose}
           >
             {cells('var(--chart-1)')}
