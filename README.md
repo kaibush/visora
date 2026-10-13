@@ -43,6 +43,14 @@ pnpm start
 
 打开 `http://127.0.0.1:3001`，同一服务同时提供前端、API、采集脚本。**整个平台应部署在域名根路径**，例如 `https://visora.example.com`。设置 HTTPS 反向代理后，将 `VISORA_SECURE_COOKIE=true`；仅在直接入口受限制且代理可信时设置 `VISORA_TRUST_PROXY=true`，并让代理传递原始 Host、X-Forwarded-Proto 和 X-Forwarded-For。
 
+一键发布：
+
+```sh
+scripts/release.sh
+```
+
+该命令安装依赖、把前端构建到临时目录、执行数据库迁移，成功后再替换 `front/dist`。本机已安装 `visora.service` 时会重启服务并检查 `/api/health`；没有该服务时在前台运行后端。只发布静态文件、不重启：`scripts/release.sh --build-only`。始终前台启动：`scripts/release.sh --foreground`。脚本不会修改 `.env` 或密钥。
+
 后端无法启动时不会启用无鉴权模式。管理员只有一个，由首次访问的浏览器创建，没有默认密码。会话有效期 7 天，并绑定当前密码指纹；密码指纹变化后旧会话失效。
 
 ## 数据库选择与迁移

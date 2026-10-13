@@ -11,6 +11,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --dir front build",
     "start": "node --env-file-if-exists=.env server/src/index.mjs",
+    "release": "bash scripts/release.sh",
     "test": "node --test server/test/*.test.mjs",
     "test:e2e": "pnpm --dir front exec playwright test",
     "lint": "pnpm --dir front lint",
