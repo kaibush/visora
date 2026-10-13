@@ -29,7 +29,7 @@ function RouteComponent() {
 
   return (
     <>
-      <Header fixed className='border-b'>
+      <Header fixed>
         <Search className='me-auto' />
         <ThemeSwitch />
         <ConfigDrawer />

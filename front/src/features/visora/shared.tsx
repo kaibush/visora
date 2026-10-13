@@ -112,7 +112,7 @@ export function VisoraPage({
   const identity = pageIdentity[title as keyof typeof pageIdentity]
   return (
     <>
-      <Header fixed className='border-b bg-background/95 backdrop-blur'>
+      <Header fixed className='bg-background/95 backdrop-blur'>
         {identity && (
           <IconBadge icon={identity.icon} tone={identity.tone} size='sm' />
         )}
