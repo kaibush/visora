@@ -111,8 +111,9 @@
     max-width: 100%;
   }
 
-  .recharts-responsive-container,
-  .recharts-wrapper {
+  /* Constrain the outer chart box only. Recharts measures from a 0×0 node;
+     max-width: 100% on .recharts-wrapper collapses the bars to nothing. */
+  .recharts-responsive-container {
     max-width: 100% !important;
   }
 }
