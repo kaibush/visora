@@ -283,4 +283,4 @@ pnpm test:e2e                   # 跨域脚本、SPA、用户身份切换、看�
 
 前端基于 [shadcn-admin](https://github.com/satnaing/shadcn-admin)，原 MIT 许可见 `front/LICENSE`。
 
-看板默认使用 Asia/Shanghai（UTC+8），日期边界与 CSV 时间一致。分析 API 可传 `timezone=Asia/Shanghai`；省略时保留 UTC 口径以兼容既有调用。访问明细的「详情」提供完整控件位置、访客和会话标识及用途说明。
+看板、访问明细及导出默认查看今天的数据，可手动切换最近 7 天、最近 30 天或自定义日期。看板默认使用 Asia/Shanghai（UTC+8），日期边界与 CSV 时间一致。分析 API 未指定日期时也默认今天，可传 `timezone=Asia/Shanghai`；省略时保留 UTC 口径以兼容既有调用。访问明细的「详情」提供完整控件位置、访客和会话标识及用途说明。

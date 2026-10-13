@@ -40,11 +40,9 @@ const FilterContext = createContext<{
 } | null>(null)
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
-  const [filter, setFilter] = useState<Filter>({
-    project: 'all',
-    userId: '',
-    from: date(-6),
-    to: date(),
+  const [filter, setFilter] = useState<Filter>(() => {
+    const today = date()
+    return { project: 'all', userId: '', from: today, to: today }
   })
   return <FilterContext value={{ filter, setFilter }}>{children}</FilterContext>
 }

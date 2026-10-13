@@ -18,7 +18,7 @@ export function parseFilter(query, now) {
     .object({
       project: z.string().max(80).default('all'),
       userId: z.string().trim().max(128).default(''),
-      from: dateString.default(new Date(now + offset - 6 * day).toISOString().slice(0, 10)),
+      from: dateString.default(today),
       to: dateString.default(today),
       page: z.coerce.number().int().min(1).max(100000).default(1),
     })
