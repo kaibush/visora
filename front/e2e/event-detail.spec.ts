@@ -70,7 +70,7 @@ for (const mobile of [false, true]) {
           exact: true,
         })
         if (mobile)
-          await page.getByRole('button', { name: /全部项目 · 最近/ }).click()
+          await page.getByRole('button', { name: '全部项目 · 今天', exact: true }).click()
         await projectFilter.click()
         await page.getByRole('option', { name, exact: true }).click()
         if (mobile)
