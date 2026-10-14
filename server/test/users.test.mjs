@@ -60,6 +60,11 @@ test('user directory isolates projects, keeps latest identity, ranks PV and incl
   assert.equal(result.hotIps[0].pv, 4)
   assert.equal(result.hotIps[0].projects, 2)
   assert.equal(result.hotIps[0].visitors, 3)
+  assert.equal(result.hotIps[0].userCount, 3)
+  assert.deepEqual(result.hotIps[0].users.map((user) => user.name).sort(), ['仅事件用户', '另一个用户', '新名字'])
+  const ipv6 = result.hotIps.find((row) => row.ip === '2001:db8::1')
+  assert.equal(ipv6.userCount, 2)
+  assert.deepEqual(ipv6.users.map((user) => user.name), ['新名字', '仅事件用户'])
   assert.equal((await get(`project=${second.project.id}`)).total, 1)
   assert.equal((await get('search=new%40example.com')).total, 1)
   assert.equal((await get('search=%25')).total, 0)
@@ -67,6 +72,8 @@ test('user directory isolates projects, keeps latest identity, ranks PV and incl
   const history = await get('from=2026-10-11&to=2026-10-11')
   assert.equal(history.total, 1)
   assert.equal(history.users[0].name, '旧名字')
+  assert.equal(history.hotIps[0].users[0].name, '旧名字')
+  assert.deepEqual((await get('ip=2001%3Adb8%3A%3A1')).hotIps[0].users.map((user) => user.name), ['新名字', '仅事件用户'])
   assert.equal((await get('ip=2001%3Adb8%3A%3A1')).users[0].pv, 1)
   const details = await admin('/api/events?ip=2001%3Adb8%3A%3A1')
   assert.equal(details.json().total, 1)
@@ -97,4 +104,33 @@ test('user search and pagination are stable and retain rankings for the full sel
   const empty = await get('from=2026-10-10&to=2026-10-10')
   assert.equal(empty.total, 0)
   assert.deepEqual(empty.summary, { users: 0, ips: 0, identifiedPv: 0, anonymousPv: 0 })
+  assert.deepEqual(empty.hotIps, [])
+})
+
+test('hot IP names follow the visitor and keep the latest identities within a short list', async (t) => {
+  const { create, send, get } = await fixture(t)
+  const namedLater = await create('稍后识别')
+  await send(namedLater.key, [
+    { ip: '198.51.100.10', visitorId: 'same', path: '/anon' },
+    { visitorId: 'same', type: 'event', name: 'login', user: { id: '7', name: '周七' }, path: '/login' },
+  ])
+  const linked = await get(`project=${namedLater.project.id}`)
+  assert.equal(linked.hotIps[0].visitors, 1)
+  assert.equal(linked.hotIps[0].userCount, 1)
+  assert.deepEqual(linked.hotIps[0].users[0], {
+    projectId: namedLater.project.id,
+    projectName: '稍后识别',
+    userId: '7',
+    name: '周七',
+  })
+  const crowded = await create('多人共用')
+  await send(crowded.key, Array.from({ length: 4 }, (_, index) => ({
+    ip: '198.51.100.20',
+    visitorId: `visitor-${index}`,
+    user: { id: `user-${index}`, name: `用户${index}` },
+    occurredAt: new Date(timestamp - (4 - index) * 60000).toISOString().replace('.000Z', 'Z'),
+  })))
+  const ranked = (await get(`project=${crowded.project.id}`)).hotIps[0]
+  assert.equal(ranked.userCount, 4)
+  assert.deepEqual(ranked.users.map((user) => user.name), ['用户3', '用户2', '用户1'])
 })

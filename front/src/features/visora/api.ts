@@ -109,12 +109,20 @@ export type TrackedUser = {
   ips: number
   lastSeen: number
 }
+export type HotIpUser = {
+  projectId: string
+  projectName: string
+  userId: string
+  name: string | null
+}
 export type HotIp = {
   ip: string
   pv: number
   visitors: number
   projects: number
   lastSeen: number
+  users: HotIpUser[]
+  userCount: number
 }
 export type UserDirectory = {
   users: TrackedUser[]

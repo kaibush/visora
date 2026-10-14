@@ -35,6 +35,7 @@ import {
   api,
   formatNumber,
   formatTime,
+  type HotIp,
   type TrackedUser,
   type UserDirectory,
 } from './api'
@@ -46,8 +47,22 @@ type RankItem = {
   key: string
   label: string
   description: string
+  detail?: string
   value: number
   open: () => void
+}
+
+function hotIpDetail(ip: HotIp) {
+  const labels = ip.users.map((user) => user.name || user.userId)
+  const duplicated = new Set(labels).size !== labels.length
+  const shown = ip.users.map((user) => {
+    const name = user.name || user.userId
+    return duplicated ? `${name}（${user.projectName}）` : name
+  })
+  if (!shown.length) return ''
+  return ip.userCount > shown.length
+    ? `${shown.join('、')} 等 ${formatNumber(ip.userCount)} 人`
+    : shown.join('、')
 }
 
 function RankingChart({
@@ -69,7 +84,11 @@ function RankingChart({
             type='button'
             className='group flex min-h-14 w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
             onClick={item.open}
-            aria-label={`${item.label}，${item.value} 次浏览，查看明细`}
+            aria-label={
+              item.detail
+                ? `${item.label}，${item.value} 次浏览，查看明细，${item.detail}`
+                : `${item.label}，${item.value} 次浏览，查看明细`
+            }
           >
             <span className='w-4 shrink-0 text-center text-xs text-muted-foreground tabular-nums'>
               {index + 1}
@@ -103,10 +122,28 @@ function RankingChart({
                 />
               </div>
               <span
-                className='truncate text-xs text-muted-foreground'
-                title={item.description}
+                className='truncate text-xs'
+                title={
+                  item.detail
+                    ? `${item.detail} · ${item.description}`
+                    : item.description
+                }
               >
-                {item.description}
+                {item.detail ? (
+                  <>
+                    <span className='font-medium text-foreground'>
+                      {item.detail}
+                    </span>
+                    <span className='text-muted-foreground'>
+                      {' · '}
+                      {item.description}
+                    </span>
+                  </>
+                ) : (
+                  <span className='text-muted-foreground'>
+                    {item.description}
+                  </span>
+                )}
               </span>
             </div>
             <ArrowUpRight className='size-3.5 shrink-0 text-muted-foreground' />
@@ -214,6 +251,7 @@ export function VisoraUsers() {
     data?.hotIps.map((ip) => ({
       key: ip.ip,
       label: ip.ip,
+      detail: hotIpDetail(ip) || undefined,
       description: `${formatNumber(ip.visitors)} 位访客 · ${formatNumber(ip.projects)} 个项目`,
       value: ip.pv,
       open: () => openIp(ip.ip),
