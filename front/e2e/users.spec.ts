@@ -56,8 +56,29 @@ for (const mobile of [false, true]) {
         await expect(page.getByRole('heading', { name: '访问明细', exact: true })).toBeVisible()
         if (mobile) await page.getByRole('button', { name: /IP 2001/ }).click()
         await expect(page.getByRole('button', { name: '清除 IP 筛选' })).toBeVisible()
+        await expect(page.getByRole('textbox', { name: 'IP 地址', exact: true })).toHaveValue(ip)
         expect((await (await page.request.get(`/api/events?project=${ids[0]}&ip=${encodeURIComponent(ip)}`)).json()).total).toBe(2)
         await page.getByRole('button', { name: '清除 IP 筛选' }).click()
+        const ipInput = page.getByRole('textbox', { name: 'IP 地址', exact: true })
+        await expect(ipInput).toHaveValue('')
+        await ipInput.fill('invalid-ip')
+        await page.getByRole('button', { name: '筛选 IP', exact: true }).click()
+        await expect(page.getByText('请输入有效的 IPv4 或 IPv6 地址', { exact: true })).toBeVisible()
+        await expect(page.getByRole('button', { name: '清除 IP 筛选' })).toHaveCount(0)
+        for (const address of ['192.0.2.123', ip]) {
+          await ipInput.fill(` ${address} `)
+          const response = page.waitForResponse((response) => {
+            const url = new URL(response.url())
+            return url.pathname === '/api/events' && url.searchParams.get('ip') === address
+          })
+          await ipInput.press('Enter')
+          const result = await (await response).json()
+          expect(result.total).toBe(address === ip ? 2 : 0)
+          expect(result.events.every((event: { ip: string }) => event.ip === address)).toBe(true)
+          await expect(ipInput).toHaveValue(address)
+        }
+        await page.getByRole('button', { name: '清除 IP 筛选' }).click()
+        await expect(ipInput).toHaveValue('')
         if (mobile) await page.keyboard.press('Escape')
         expect(errors).toEqual([])
       } finally {

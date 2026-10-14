@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import { z } from 'zod'
 import { useQuery } from '@tanstack/react-query'
 import { useRouterState } from '@tanstack/react-router'
 import {
@@ -127,6 +128,7 @@ export function AnalyticsFilters({
           ?.toString() ?? 'custom')
       : 'custom'
   const [draftUser, setDraftUser] = useState(filter.userId)
+  const [draftIp, setDraftIp] = useState(filter.ip)
   const [exporting, setExporting] = useState(false)
   const [draft, setDraft] = useState({ from: filter.from, to: filter.to })
   const projectName =
@@ -303,13 +305,49 @@ export function AnalyticsFilters({
             </Button>
           )}
         </form>
+        <form
+          className={
+            stacked ? 'flex flex-col gap-2' : 'flex items-center gap-2'
+          }
+          onSubmit={(event) => {
+            event.preventDefault()
+            const ip = draftIp.trim()
+            if (ip && !z.union([z.ipv4(), z.ipv6()]).safeParse(ip).success) {
+              toast.error('请输入有效的 IPv4 或 IPv6 地址')
+              return
+            }
+            setDraftIp(ip)
+            setFilter({ ...filter, ip })
+          }}
+        >
+          <Input
+            aria-label='IP 地址'
+            placeholder='IP 地址'
+            className={stacked ? 'h-11 w-full' : 'h-9 w-44'}
+            maxLength={45}
+            autoCapitalize='none'
+            spellCheck={false}
+            value={draftIp}
+            onChange={(event) => setDraftIp(event.target.value)}
+          />
+          <Button
+            type='submit'
+            variant='secondary'
+            className={stacked ? 'h-11' : 'h-9'}
+          >
+            筛选 IP
+          </Button>
+        </form>
         {filter.ip && (
           <Button
             type='button'
             variant='outline'
             className='max-w-full'
             aria-label='清除 IP 筛选'
-            onClick={() => setFilter({ ...filter, ip: '' })}
+            onClick={() => {
+              setDraftIp('')
+              setFilter({ ...filter, ip: '' })
+            }}
           >
             <span className='truncate'>IP：{filter.ip}</span>
             <span aria-hidden='true'>×</span>
@@ -394,7 +432,7 @@ export function AnalyticsFilters({
               <SheetHeader>
                 <SheetTitle>筛选</SheetTitle>
                 <SheetDescription>
-                  项目、日期和用户。时间按上海时区。
+                  项目、日期、用户和 IP。时间按上海时区。
                 </SheetDescription>
               </SheetHeader>
               <div className='flex flex-col gap-3 px-4 pb-4'>
