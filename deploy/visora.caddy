@@ -3,6 +3,7 @@
 # 访客 IP 优先用 Cloudflare 的 CF-Connecting-IP，直连时回退到 Caddy 看到的地址。
 visora.lvyrix.com {
 	import access_log
+	import login_guard
 	encode zstd gzip
 
 	map {http.request.header.CF-Connecting-IP} {visora_client_ip} {
